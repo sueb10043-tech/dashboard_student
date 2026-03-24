@@ -1,0 +1,461 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>학급 운영 대시보드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Public Sans(숫자용)와 고운 돋움(한글용) 로드 -->
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@900&family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Gowun Dodum', 'Noto Sans KR', sans-serif;
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #d8eeff;
+            color: #444;
+            user-select: none;
+        }
+
+        /* Window Frame Styles */
+        .window-frame {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+        }
+
+        .window-header {
+            background: #f3f4f6;
+            padding: 6px 12px;
+            display: flex;
+            gap: 6px;
+            border-bottom: 1px solid #e5e7eb;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #d1d5db;
+        }
+
+        /* Chalkboard Header Tools */
+        .browser-header {
+            background: #f3f4f6;
+            padding: 6px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .address-bar-container {
+            background: white;
+            flex-grow: 1;
+            height: 28px;
+            border-radius: 14px;
+            border: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 12px;
+        }
+
+        /* Textarea Style */
+        #blackboard-input {
+            width: 100%;
+            height: 100%;
+            padding: 8px 12px;
+            border: none;
+            outline: none;
+            resize: none;
+            line-height: 1.4;
+            color: #333;
+            font-family: 'Gowun Dodum', sans-serif;
+        }
+
+        /* Clock Widget (Public Sans) */
+        #display-time {
+            font-family: 'Public Sans', sans-serif;
+            letter-spacing: 0.05em; 
+            position: relative;
+            top: 0px; 
+        }
+
+        /* Date Widget (Gowun Dodum, Spacing 0) */
+        #display-date {
+            font-family: 'Gowun Dodum', sans-serif;
+            letter-spacing: 0; 
+            position: relative;
+            top: 0px; 
+        }
+
+        /* 숫자 입력창 화살표 제거 */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        /* Schedule Items */
+        .schedule-item {
+            padding: 10px 20px;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 1.4rem;
+            font-weight: 500;
+        }
+
+        /* 시정표 옵션 버튼 스타일 (4교시/5교시 선택용) */
+        .schedule-tab-btn {
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: #f3f4f6;
+            color: #9ca3af;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .schedule-tab-btn.active {
+            background: #0891b2;
+            color: white;
+        }
+
+        /* Bottom App Bar */
+        .dock-bar {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border-radius: 2rem;
+            padding: 8px 24px;
+            display: flex;
+            gap: 16px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .app-icon {
+            width: 60px;
+            height: 60px;
+            background: #f3f4f6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #4b5563;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .app-icon:hover { transform: translateY(-5px); background: #e5e7eb; }
+
+        .text-cyan-point { color: #0891b2; }
+
+        /* Clear Button */
+        .btn-clear-all {
+            margin-left: auto;
+            color: #ef4444;
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: #fee2e2;
+            font-weight: bold;
+            font-size: 10px;
+            line-height: 0;
+            flex-shrink: 0;
+        }
+        .btn-clear-all:hover { background: #ef4444; color: white; }
+
+        /* Color Buttons */
+        .color-btn {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 1px solid rgba(0,0,0,0.1);
+            transition: transform 0.1s;
+        }
+        .color-btn:hover { transform: scale(1.2); }
+
+        /* Fixed Width Column */
+        .right-column-width {
+            width: 320px;
+        }
+
+        /* Custom Confirmation Modal */
+        #confirm-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.3);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            text-align: center;
+            width: 300px;
+        }
+    </style>
+</head>
+<body class="pt-2 px-8 pb-8 flex flex-col gap-6">
+
+    <!-- Custom Modal for Clear Confirmation -->
+    <div id="confirm-modal">
+        <div class="modal-content">
+            <p class="text-lg font-bold mb-6">정말 모두 삭제하겠습니까?</p>
+            <div class="flex gap-3 justify-center">
+                <button onclick="executeClear()" class="bg-red-500 text-white px-4 py-2 rounded-lg font-bold">삭제</button>
+                <button onclick="closeModal()" class="bg-gray-200 px-4 py-2 rounded-lg font-bold">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Layout (Date/Time) -->
+    <header class="flex justify-between items-start">
+        <!-- Date Window (310x120) -->
+        <div class="window-frame" style="width: 310px; height: 120px;">
+            <div class="window-header">
+                <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+            </div>
+            <div class="flex-grow flex items-center justify-center">
+                <div id="display-date" class="text-[40px] font-bold whitespace-nowrap">
+                    <span class="text-cyan-point">0</span>월 <span class="text-cyan-point">0</span>일 <span class="text-cyan-point">0</span>요일
+                </div>
+            </div>
+        </div>
+
+        <!-- Clock Window (320x120) -->
+        <div class="window-frame right-column-width" style="height: 120px;">
+            <div class="window-header">
+                <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+            </div>
+            <div class="flex-grow flex items-center justify-center">
+                <div id="display-time" class="text-[70px] font-black leading-none text-center">00:00</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <main class="flex gap-8 h-[64vh]">
+        <!-- Chalkboard -->
+        <div class="window-frame flex-grow">
+            <div class="browser-header">
+                <div class="flex gap-2">
+                    <div class="dot w-2 h-2 bg-red-400"></div>
+                    <div class="dot w-2 h-2 bg-yellow-400"></div>
+                    <div class="dot w-2 h-2 bg-green-400"></div>
+                </div>
+                <!-- Browser Bar with Tools -->
+                <div class="address-bar-container">
+                    <!-- Color Presets -->
+                    <div class="flex gap-1.5 items-center">
+                        <div class="color-btn bg-black" onclick="setChalkColor('#333333')"></div>
+                        <div class="color-btn bg-red-500" onclick="setChalkColor('#ef4444')"></div>
+                        <div class="color-btn bg-blue-500" onclick="setChalkColor('#3b82f6')"></div>
+                        <div class="color-btn bg-green-500" onclick="setChalkColor('#22c55e')"></div>
+                    </div>
+                    <div class="h-3 w-[1px] bg-gray-200 mx-1"></div>
+                    <!-- Font Size Input (px) -->
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Size</span>
+                        <input type="number" id="font-size-input" value="50" min="10" max="200" step="1" class="bg-gray-100 rounded px-1 text-[10px] font-bold outline-none w-8 h-5 text-center" onchange="updateChalkStyle()">
+                    </div>
+                    <!-- Clear All Button -->
+                    <div class="btn-clear-all" onclick="showClearModal()">✕</div>
+                </div>
+            </div>
+
+            <div class="flex-grow bg-white">
+                <textarea id="blackboard-input" spellcheck="false"></textarea>
+            </div>
+        </div>
+
+        <!-- Schedule Column -->
+        <div class="window-frame right-column-width">
+            <div class="window-header flex justify-between items-center pr-4">
+                <div class="flex gap-1.5">
+                    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                </div>
+                <!-- 요일별 옵션 버튼 (예: 금요일 4교시/5교시) -->
+                <div id="schedule-options" class="flex gap-1"></div>
+            </div>
+            <div id="schedule-list" class="flex-grow overflow-y-auto bg-white"></div>
+        </div>
+    </main>
+
+    <!-- Dock Bar -->
+    <footer class="mt-auto flex justify-center pb-6">
+        <div class="dock-bar">
+            <div class="app-icon">정리시간<br>타이머</div>
+            <div class="app-icon">주사위</div>
+            <div class="app-icon">타이머</div>
+            <div class="app-icon">랜덤레이스</div>
+            <div class="app-icon">랜덤 뽑기</div>
+            <div class="app-icon">블랙 아웃</div>
+        </div>
+    </footer>
+
+    <script>
+        function updateClock() {
+            const now = new Date();
+            const month = now.getMonth() + 1;
+            const date = now.getDate();
+            const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
+            const day = dayNames[now.getDay()];
+
+            let h = now.getHours() % 12 || 12;
+            const hStr = String(h).padStart(2, '0');
+            const mStr = String(now.getMinutes()).padStart(2, '0');
+
+            document.getElementById('display-date').innerHTML = `
+                <span class="text-cyan-point">${month}</span>월 
+                <span class="text-cyan-point">${date}</span>일 
+                <span class="text-cyan-point">${day}</span>요일
+            `;
+            
+            document.getElementById('display-time').textContent = `${hStr}:${mStr}`;
+        }
+
+        function setChalkColor(color) {
+            const input = document.getElementById('blackboard-input');
+            input.style.color = color;
+            localStorage.setItem('chalk_color', color);
+        }
+
+        function updateChalkStyle() {
+            const size = document.getElementById('font-size-input').value;
+            const input = document.getElementById('blackboard-input');
+            input.style.fontSize = size + 'px';
+            localStorage.setItem('chalk_size', size);
+        }
+
+        function showClearModal() {
+            document.getElementById('confirm-modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('confirm-modal').style.display = 'none';
+        }
+
+        function executeClear() {
+            const input = document.getElementById('blackboard-input');
+            input.value = "";
+            localStorage.removeItem('class_note');
+            closeModal();
+        }
+
+        // 시정표 리스트 렌더링 함수
+        function renderSchedule(items) {
+            const listContainer = document.getElementById('schedule-list');
+            listContainer.innerHTML = ''; 
+            if (!items || !Array.isArray(items)) return;
+
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'schedule-item';
+                div.textContent = item;
+                listContainer.appendChild(div);
+            });
+        }
+
+        async function fetchSchedule() {
+            const gasUrl = "https://script.google.com/macros/s/AKfycbzoCgmF_cfpNOaImXQ7yY0UPOZ5eDuH1whp7NKTdEAvjPWGO6y5GzvafqySyy3Oul1l/exec"; // 본인의 GAS 웹 앱 URL을 여기에 넣으세요.
+            if(!gasUrl) return;
+
+            try {
+                const response = await fetch(`${gasUrl}?sheet=학생용_바탕화면`);
+                const data = await response.json();
+                
+                const now = new Date();
+                const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
+                const today = dayNames[now.getDay()];
+
+                const todayData = data[today];
+                const optionsContainer = document.getElementById('schedule-options');
+                optionsContainer.innerHTML = ''; // 초기화
+
+                if (todayData) {
+                    // 1. 데이터가 단순 배열인 경우 (월, 화, 수, 목 등)
+                    if (Array.isArray(todayData)) {
+                        renderSchedule(todayData);
+                    } 
+                    // 2. 데이터가 객체인 경우 (금요일처럼 여러 옵션이 있는 경우)
+                    else if (typeof todayData === 'object') {
+                        const keys = Object.keys(todayData);
+                        keys.forEach((key, index) => {
+                            const btn = document.createElement('button');
+                            btn.className = `schedule-tab-btn ${index === 0 ? 'active' : ''}`;
+                            btn.textContent = key;
+                            btn.onclick = () => {
+                                document.querySelectorAll('.schedule-tab-btn').forEach(b => b.classList.remove('active'));
+                                btn.classList.add('active');
+                                renderSchedule(todayData[key]);
+                            };
+                            optionsContainer.appendChild(btn);
+                        });
+                        // 첫 번째 옵션 기본 렌더링
+                        renderSchedule(todayData[keys[0]]);
+                    }
+                } else {
+                    document.getElementById('schedule-list').innerHTML = '<div class="p-5 text-gray-400 text-sm">등록된 일정이 없습니다.</div>';
+                }
+            } catch (error) {
+                console.error("데이터 로드 실패:", error);
+                document.getElementById('schedule-list').innerHTML = '<div class="p-5 text-red-400 text-sm">데이터를 불러오지 못했습니다.</div>';
+            }
+        }
+
+        window.onload = () => {
+            updateClock();
+            setInterval(updateClock, 1000);
+            
+            fetchSchedule();
+            setInterval(fetchSchedule, 1000 * 60 * 30); // 30분마다 갱신
+
+            const input = document.getElementById('blackboard-input');
+            const fontSizeInput = document.getElementById('font-size-input');
+            
+            const savedNote = localStorage.getItem('class_note');
+            const savedColor = localStorage.getItem('chalk_color');
+            const savedSize = localStorage.getItem('chalk_size') || "50";
+
+            if(savedNote) input.value = savedNote;
+            if(savedColor) {
+                input.style.color = savedColor;
+            }
+            
+            // 초기 글씨 크기는 50px로 시작
+            fontSizeInput.value = "50";
+            input.style.fontSize = '50px';
+            
+            input.addEventListener('input', (e) => {
+                localStorage.setItem('class_note', e.target.value);
+            });
+        };
+    </script>
+</body>
+</html>
