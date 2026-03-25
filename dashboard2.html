@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;700;900&family=Gowun+Dodum:wght@400;700&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        /* 폰트 깨짐 방지 및 선명도 극대화 */
+        /* 폰트 선명도 최적화 */
         * {
             -webkit-font-smoothing: subpixel-antialiased;
             text-rendering: geometricPrecision;
@@ -17,129 +17,123 @@
 
         body {
             font-family: 'Gowun Dodum', 'Noto Sans KR', sans-serif;
-            margin: 0; padding: 0; width: 100vw; height: 100vh;
-            overflow: hidden; background-color: #d8eeff; color: #444;
-            user-select: none;
+            margin: 0; padding: 0; 
+            width: 100vw; height: 100vh;
+            background-color: #d8eeff;
+            overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
         }
 
-        /* 전체 스케일 조절 (미리보기 대응용) */
+        /* [핵심] 실제 1920x1080 모니터 환경을 강제로 재현하는 가상 캔버스 */
         #app-scaler {
-            width: 100%; height: 100%;
-            display: flex; flex-direction: column;
-            transform-origin: top left;
-            backface-visibility: hidden;
+            width: 1920px;
+            height: 1080px;
+            flex-shrink: 0;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            transform-origin: center center;
+            display: flex;
+            flex-direction: column;
+            /* 상단 여백 (기본 26px + 추가 10px = 36px) */
+            padding: 36px 60px;
+            box-sizing: border-box;
+            background-color: #d8eeff;
         }
 
         .window-frame {
-            background: white; border-radius: 0.75rem;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+            background: white; border-radius: 1rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
             display: flex; flex-direction: column; overflow: hidden;
             border: 1px solid #e5e7eb;
         }
 
         .window-header {
-            background: #f3f4f6; padding: 8px 16px; display: flex;
-            gap: 8px; border-bottom: 1px solid #e5e7eb; height: 32px; flex-shrink: 0;
+            background: #f3f4f6; padding: 10px 18px; display: flex;
+            gap: 8px; border-bottom: 1px solid #e5e7eb; height: 36px; flex-shrink: 0;
+            align-items: center;
         }
 
         .dot { width: 10px; height: 10px; border-radius: 50%; background: #d1d5db; }
 
         /* 칠판 도구바 */
         .browser-header {
-            background: #f3f4f6; padding: 6px 16px; display: flex;
+            background: #f3f4f6; padding: 8px 16px; display: flex;
             align-items: center; gap: 12px; border-bottom: 1px solid #e5e7eb;
         }
 
         .address-bar-container {
-            background: white; flex-grow: 1; height: 32px; border-radius: 14px;
-            border: 1px solid #e5e7eb; display: flex; align-items: center; padding: 0 16px; gap: 12px;
+            background: white; flex-grow: 1; height: 38px; border-radius: 19px;
+            border: 1px solid #e5e7eb; display: flex; align-items: center; padding: 0 20px; gap: 15px;
         }
 
         #blackboard-input {
-            width: 100%; height: 100%; padding: 20px; border: none; outline: none;
+            width: 100%; height: 100%; padding: 40px; border: none; outline: none;
             overflow-y: auto; line-height: 1.6; color: #333; font-weight: bold;
             white-space: pre-wrap; word-break: break-all; user-select: text;
         }
 
         #display-time { font-family: 'Public Sans', sans-serif; letter-spacing: -0.02em; }
-
-        input[type=number]::-webkit-inner-spin-button,
-        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         input[type=number] { -moz-appearance: textfield; }
 
-        /* 시정표 리스트 - 화살표의 기준점(Relative) 설정 */
-        #schedule-list {
-            position: relative;
-            padding-bottom: 25px;
-        }
+        /* 시정표 리스트 */
+        #schedule-list { position: relative; padding-bottom: 25px; }
 
-        /* 시정표 아이템 - 수평 정렬 보정 */
+        /* 시정표 아이템 - 요청하신 70px 반영 */
         .schedule-item {
             display: grid;
-            grid-template-columns: 200px 1fr;
+            grid-template-columns: 280px 1fr;
             align-items: center;
-            padding: 20px 15px 20px 20px; 
+            padding: 20px 20px 20px 20px; /* 왼쪽 20px */
             border-bottom: 1px solid #f3f4f6; 
-            font-size: 2.95rem;
+            font-size: 70px; /* 75px -> 70px 수정 */
             font-weight: 500;
-            min-height: 110px;
-            box-sizing: border-box; transition: background-color 0.4s ease;
+            height: 130px; /* 폰트 크기에 맞춰 높이 미세 조정 */
+            box-sizing: border-box;
+            transition: background-color 0.4s ease;
             position: relative;
         }
         
-        .schedule-label {
-            color: #0891b2; font-weight: 700; text-align: center;
-            letter-spacing: 0.05em; line-height: 1;
-        }
-
-        .schedule-time {
-            padding-left: 30px; 
-            font-family: 'Public Sans', sans-serif; font-weight: 400;
-            color: #6b7280; line-height: 1; white-space: nowrap; 
-        }
-
+        .schedule-label { color: #0891b2; font-weight: 700; text-align: center; line-height: 1; }
+        .schedule-time { padding-left: 20px; font-family: 'Public Sans', sans-serif; font-weight: 400; color: #6b7280; line-height: 1; white-space: nowrap; }
         .active-period { background-color: #fff9db !important; }
 
-        /* 쉬는시간 화살표 (골든 옐로우) - 위치 계산 보정 */
+        /* 쉬는시간 화살표 (골든 옐로우) */
         #break-indicator {
-            position: absolute; left: -10px; width: calc(100% + 10px); height: 4px;
+            position: absolute; left: -12px; width: calc(100% + 12px); height: 6px;
             display: none; align-items: center; pointer-events: none; z-index: 50;
         }
         #break-indicator::before {
             content: '▶'; position: absolute; left: 0; color: #f59e0b;
-            font-size: 2.2rem; animation: arrowBounce 0.8s infinite;
+            font-size: 2.8rem; animation: arrowBounce 0.8s infinite;
         }
         #break-indicator::after {
-            content: ''; position: absolute; left: 25px; right: 0; height: 4px;
+            content: ''; position: absolute; left: 30px; right: 0; height: 4px;
             background-color: rgba(245, 158, 11, 0.4);
         }
 
-        @keyframes arrowBounce {
-            0%, 100% { transform: translateX(0); }
-            50% { transform: translateX(6px); }
-        }
+        @keyframes arrowBounce { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(8px); } }
 
-        /* 하단 도크 바 (기존 디자인 스타일) */
+        /* 하단 도크 바 (오리지널 화사한 디자인) */
         .dock-container {
-            position: fixed; bottom: 70px; left: 0; right: 0;
-            display: flex; justify-content: center; z-index: 100; pointer-events: none; 
+            position: absolute; bottom: 70px; left: 0; right: 0;
+            display: flex; justify-content: center; pointer-events: none; z-index: 100;
         }
-
         .dock-bar {
             background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(15px);
-            border-radius: 1.5rem; padding: 10px 22px; display: flex; gap: 16px;
+            border-radius: 1.5rem; padding: 12px 25px; display: flex; gap: 18px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 1px solid rgba(255, 255, 255, 0.5);
-            align-items: center; pointer-events: auto; 
+            align-items: center; pointer-events: auto;
         }
-
         .app-icon-wrapper { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .app-icon-wrapper:hover { transform: translateY(-6px); }
         .app-icon-box { 
-            width: 52px; height: 52px; border-radius: 1.1rem; 
-            display: flex; align-items: center; justify-content: center; 
-            box-shadow: 0 3px 8px rgba(0,0,0,0.08), inset 0 2px 4px rgba(255,255,255,0.8); 
-            position: relative; overflow: hidden; 
+            width: 52px; height: 52px; border-radius: 1.1rem; display: flex; align-items: center; justify-content: center; 
+            box-shadow: 0 3px 8px rgba(0,0,0,0.08), inset 0 2px 4px rgba(255,255,255,0.8); position: relative; overflow: hidden; 
         }
+        .app-label { font-size: 9px; font-weight: 700; color: #64748b; text-align: center; }
 
         .bg-app-blue { background: linear-gradient(145deg, #e0f2fe, #bae6fd); }
         .bg-app-green { background: linear-gradient(145deg, #f0fdf4, #dcfce7); }
@@ -148,169 +142,133 @@
         .bg-app-gray { background: linear-gradient(145deg, #f9fafb, #f3f4f6); }
         .bg-app-red { background: linear-gradient(145deg, #fff1f2, #ffe4e6); }
 
-        .app-label { font-size: 9px; font-weight: 700; color: #64748b; text-align: center; letter-spacing: -0.02em; }
-
-        .btn-clear-all {
-            margin-left: auto; color: #ef4444; cursor: pointer; width: 22px; height: 22px;
-            display: flex; align-items: center; justify-content: center; border-radius: 50%;
-            background: #fee2e2; font-weight: bold; font-size: 12px; flex-shrink: 0; line-height: 0;
-        }
-
-        /* 창 크기 및 날씨 아이콘 보정 */
+        /* 창 크기 및 여백 설정 */
         .date-weather-window-width { width: 800px; height: 200px; } 
         .clock-window-width { width: 550px; height: 200px; }
         .schedule-window-width { width: 550px; } 
 
-        #weather-icon { font-size: 90px; margin-left: 35px; position: relative; top: -8px; }
+        #weather-icon { font-size: 90px; margin-left: 45px; position: relative; top: -8px; }
         .text-cyan-point { color: #0891b2; }
 
-        /* 모달 스타일 */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.2); backdrop-filter: blur(4px);
-            display: none; align-items: center; justify-content: center; z-index: 1000;
-        }
-        .modal-content {
-            background: white; padding: 50px; border-radius: 30px;
-            box-shadow: 0 25px 70px rgba(0,0,0,0.18); text-align: center;
+        .btn-clear-all {
+            margin-left: auto; color: #ef4444; cursor: pointer; width: 22px; height: 22px;
+            display: flex; align-items: center; justify-content: center; border-radius: 50%;
+            background: #fee2e2; font-weight: bold; font-size: 12px; line-height: 0;
         }
 
-        /* 블랙아웃 */
-        #blackout-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; display: none; z-index: 2000; }
-        .exit-blackout {
-            position: absolute; bottom: 40px; right: 40px; 
-            width: 70px; height: 70px; border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.7); background: rgba(255,255,255,0.1);
-            color: white; cursor: pointer; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 25px rgba(255,255,255,0.3); transition: all 0.3s; opacity: 0.5;
-        }
-        .exit-blackout:hover { opacity: 1; transform: scale(1.1); border-color: white; box-shadow: 0 0 30px rgba(255,255,255,0.5); }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 1920px; height: 1080px; background: rgba(0,0,0,0.2); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: white; padding: 60px; border-radius: 40px; box-shadow: 0 30px 80px rgba(0,0,0,0.2); text-align: center; }
+        #blackout-overlay { position: fixed; top: 0; left: 0; width: 1920px; height: 1080px; background: black; display: none; z-index: 2000; }
+        .exit-blackout { position: absolute; bottom: 60px; right: 60px; width: 90px; height: 90px; border-radius: 50%; border: 4px solid rgba(255,255,255,0.7); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0.4; transition: 0.3s; }
+        .exit-blackout:hover { opacity: 1; transform: scale(1.1); box-shadow: 0 0 40px white; }
 
-        .color-btn {
-            width: 20px; height: 20px; border-radius: 50%; cursor: pointer;
-            border: 1px solid rgba(0,0,0,0.1); transition: transform 0.1s;
-        }
+        .color-btn { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 1px solid rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
 
     <div id="app-scaler">
-        <div class="pt-4 px-10 flex flex-col gap-8 h-full">
-            <div id="blackout-overlay">
-                <div class="exit-blackout" onclick="toggleBlackout()">
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" cy="2" x2="12" y2="12"></line></svg>
+        <div id="blackout-overlay"><div class="exit-blackout" onclick="toggleBlackout()"><svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg></div></div>
+
+        <!-- 삭제 확인 모달 -->
+        <div id="confirm-modal" class="hidden fixed top-0 left-0 w-full h-full bg-black/30 z-[1000] items-center justify-center">
+            <div class="bg-white p-12 rounded-[2rem] shadow-2xl text-center w-[450px]">
+                <p class="text-3xl font-bold mb-10">정말 모두 삭제하겠습니까?</p>
+                <div class="flex gap-6 justify-center">
+                    <button onclick="executeClear()" class="bg-red-500 text-white px-10 py-5 rounded-2xl font-bold text-xl">삭제</button>
+                    <button onclick="closeModal()" class="bg-gray-200 px-10 py-5 rounded-2xl font-bold text-xl">취소</button>
                 </div>
             </div>
+        </div>
 
-            <!-- 확인 모달 -->
-            <div id="confirm-modal" class="hidden fixed top-0 left-0 w-full h-full bg-black/30 z-[1000] items-center justify-center">
-                <div class="bg-white p-8 rounded-2xl shadow-xl text-center w-[350px]">
-                    <p class="text-xl font-bold mb-8">정말 모두 삭제하겠습니까?</p>
-                    <div class="flex gap-4 justify-center">
-                        <button onclick="executeClear()" class="bg-red-500 text-white px-6 py-3 rounded-xl font-bold">삭제</button>
-                        <button onclick="closeModal()" class="bg-gray-200 px-6 py-3 rounded-xl font-bold">취소</button>
+        <div id="timer-modal" class="modal-overlay" onclick="closeAppModals(event)">
+            <div class="modal-content" style="min-width: 650px;" onclick="event.stopPropagation()">
+                <h2 class="text-4xl font-bold mb-10 text-gray-400 uppercase tracking-widest">정리시간</h2>
+                <div id="cleanup-display" class="text-[180px] font-black text-blue-600 leading-none mb-12">02:00</div>
+                <div class="w-full bg-gray-100 h-10 rounded-full relative mb-14">
+                    <div class="finish-line absolute left-0 -top-10 text-3xl">🏁</div>
+                    <div id="cleanup-bar" class="h-full rounded-full bg-blue-500 transition-all duration-1000 relative">
+                        <span id="runner-icon" class="absolute -right-10 -top-16 text-7xl">🐰</span>
+                    </div>
+                </div>
+                <div class="flex gap-12 justify-center">
+                    <button id="timer-ctrl-btn" onclick="toggleCleanupTimer()" class="w-28 h-28 rounded-[2rem] bg-blue-500 text-white flex items-center justify-center shadow-xl hover:scale-105 transition-transform"><svg id="ctrl-icon" width="45" height="45" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+                    <button onclick="resetCleanupTimer()" class="w-28 h-28 rounded-[2rem] bg-gray-100 text-gray-500 flex items-center justify-center shadow-md hover:scale-105 transition-transform"><svg width="45" height="45" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
+                </div>
+            </div>
+        </div>
+
+        <header class="flex justify-between items-start mb-[50px]">
+            <div class="window-frame date-weather-window-width">
+                <div class="window-header"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                <div class="flex-grow flex items-center justify-center px-10">
+                    <div id="display-date" class="text-[80px] font-bold whitespace-nowrap"></div>
+                    <span id="weather-icon">--</span>
+                </div>
+            </div>
+            <div class="window-frame clock-window-width">
+                <div class="window-header"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                <div class="flex-grow flex items-center justify-center relative">
+                    <div class="flex items-end gap-6">
+                        <div id="display-time" class="text-[125px] font-black leading-none">00:00</div>
+                        <div id="display-ampm" class="text-[40px] font-bold pb-4 text-gray-500">--</div>
                     </div>
                 </div>
             </div>
+        </header>
 
-            <!-- 타이머 모달 -->
-            <div id="timer-modal" class="modal-overlay" onclick="closeAppModals(event)">
-                <div class="modal-content" style="min-width: 520px;" onclick="event.stopPropagation()">
-                    <h2 class="text-3xl font-bold mb-6 text-gray-400 uppercase tracking-[0.2em]">정리시간</h2>
-                    <div id="cleanup-display" class="text-[140px] font-black text-blue-600 leading-none mb-6">02:00</div>
-                    <div class="progress-track" style="width: 100%; background: #f1f5f9; height: 24px; border-radius: 20px; margin: 40px 0; overflow: visible; position: relative; border: 1px solid #e2e8f0;">
-                        <div class="finish-line" style="position: absolute; left: 0; top: -25px; font-size: 24px;">🏁</div>
-                        <div id="cleanup-bar" style="width: 100%; height: 100%; background: linear-gradient(90deg, #60a5fa, #3b82f6); transition: width 1s linear; border-radius: 20px; position: relative;">
-                            <span id="runner-icon" style="position: absolute; right: -25px; top: -45px; font-size: 48px; transition: right 1s linear;">🐰</span>
+        <main class="flex gap-12" style="height: 580px;"> 
+            <div class="window-frame flex-grow">
+                <div class="browser-header">
+                    <div class="flex gap-2"><div class="dot bg-red-400"></div><div class="dot bg-yellow-400"></div><div class="dot bg-green-400"></div></div>
+                    <div class="address-bar-container">
+                        <div class="flex gap-4 items-center">
+                            <div class="color-btn" onclick="setChalkColor('#333333')" style="background-color:#333333"></div>
+                            <div class="color-btn" onclick="setChalkColor('#ef4444')" style="background-color:#ef4444"></div>
+                            <div class="color-btn" onclick="setChalkColor('#3b82f6')" style="background-color:#3b82f6"></div>
+                            <div class="color-btn" onclick="setChalkColor('#22c55e')" style="background-color:#22c55e"></div>
                         </div>
+                        <div class="h-8 w-[1px] bg-gray-200 mx-4"></div>
+                        <div class="flex items-center gap-4">
+                            <span class="text-base font-bold text-gray-400">SIZE</span>
+                            <input type="number" id="font-size-input" value="70" class="bg-gray-100 rounded-xl px-4 py-2 font-bold outline-none w-20 text-center text-xl" onchange="updateChalkStyle()">
+                        </div>
+                        <div class="btn-clear-all" onclick="document.getElementById('confirm-modal').style.display='flex'">✕</div>
                     </div>
-                    <div class="flex gap-8 justify-center">
-                        <button id="timer-ctrl-btn" onclick="toggleCleanupTimer()" class="app-btn-icon" style="width:70px; height:70px; border-radius: 20px; background: #3b82f6; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-                            <svg id="ctrl-icon" width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                        </button>
-                        <button onclick="resetCleanupTimer()" class="app-btn-icon" style="width:70px; height:70px; border-radius: 20px; background: #f3f4f6; color: #6b7280; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-                            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-                        </button>
-                    </div>
+                </div>
+                <div class="flex-grow bg-white relative">
+                    <div id="blackboard-input" contenteditable="true" spellcheck="false"></div>
                 </div>
             </div>
+            <div class="window-frame schedule-window-width" style="height: fit-content; overflow: visible;">
+                <div class="window-header flex justify-between items-center pr-4">
+                    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                </div>
+                <div id="schedule-list" style="overflow: visible; padding-bottom: 25px;">
+                    <div id="break-indicator"></div>
+                </div>
+            </div>
+        </main>
 
-            <header class="flex justify-between items-start">
-                <div class="window-frame date-weather-window-width">
-                    <div class="window-header"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
-                    <div class="flex-grow flex items-center justify-center px-10">
-                        <!-- 날짜 폰트 80px 확대 및 Cyan 포인트 유지 -->
-                        <div id="display-date" class="text-[80px] font-bold whitespace-nowrap"></div>
-                        <span id="weather-icon">--</span>
-                    </div>
-                </div>
-                <div class="window-frame clock-window-width">
-                    <div class="window-header"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
-                    <div class="flex-grow flex items-center justify-center relative">
-                        <div class="flex items-end gap-4">
-                            <div id="display-time" class="text-[125px] font-black leading-none">00:00</div>
-                            <div id="display-ampm" class="text-[40px] font-bold pb-4 text-gray-500">--</div>
-                        </div>
-                    </div>
-                </div>
-            </header>
-
-            <main class="flex gap-8 min-h-[90vh] flex-grow mb-[150px]">
-                <div class="window-frame flex-grow">
-                    <div class="browser-header">
-                        <div class="flex gap-2">
-                            <div class="dot bg-red-400 w-3 h-3 rounded-full"></div><div class="dot bg-yellow-400 w-3 h-3 rounded-full"></div><div class="dot bg-green-400 w-3 h-3 rounded-full"></div>
-                        </div>
-                        <div class="address-bar-container">
-                            <div class="flex gap-3 items-center">
-                                <div class="color-btn" onclick="setChalkColor('#333333')" style="background-color:#333333"></div>
-                                <div class="color-btn" onclick="setChalkColor('#ef4444')" style="background-color:#ef4444"></div>
-                                <div class="color-btn" onclick="setChalkColor('#3b82f6')" style="background-color:#3b82f6"></div>
-                                <div class="color-btn" onclick="setChalkColor('#22c55e')" style="background-color:#22c55e"></div>
-                            </div>
-                            <div class="h-5 w-[1px] bg-gray-200 mx-3"></div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-[12px] font-bold text-gray-400 uppercase">Size</span>
-                                <input type="number" id="font-size-input" value="70" class="bg-gray-100 rounded px-2 text-[14px] font-bold outline-none w-12 h-7 text-center" onchange="updateChalkStyle()">
-                            </div>
-                            <div class="btn-clear-all" onclick="showClearModal()">✕</div>
-                        </div>
-                    </div>
-                    <div class="flex-grow bg-white relative">
-                        <div id="blackboard-input" contenteditable="true" spellcheck="false"></div>
-                    </div>
-                </div>
-                <div class="window-frame schedule-window-width" style="height: fit-content; overflow: visible;">
-                    <div class="window-header flex justify-between items-center pr-4">
-                        <div class="flex gap-1.5"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
-                    </div>
-                    <div id="schedule-list">
-                        <!-- 화살표가 이 안에서 정확히 계산되어 배치됨 -->
-                        <div id="break-indicator"></div>
-                    </div>
-                </div>
-            </main>
-
-            <div class="dock-container">
-                <div class="dock-bar">
-                    <div class="app-icon-wrapper" onclick="openApp('timer')"><div class="app-icon-box bg-app-blue"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0369a1" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><span class="app-label">정리시간</span></div>
-                    <div class="app-icon-wrapper" onclick="openPopup('https://toolkit.i-scream.co.kr/apps/dice/?v=3.3.8&loc=other', 750, 425)"><div class="app-icon-box bg-app-green"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2.5"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="12" cy="12" r="1.5"/></svg></div><span class="app-label">주사위</span></div>
-                    <div class="app-icon-wrapper" onclick="openPopup('https://toolkit.i-scream.co.kr/apps/timer/?loc=other', 1500, 850)"><div class="app-icon-box bg-app-yellow"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2.5"><path d="M5 22h14M5 2h14M17 22c0-3.1-2-6-5-6s-5 2.9-5 6M17 2c0 3.1-2 6-5 6s-5-2.9-5-6M12 10.5v3"/></svg></div><span class="app-label">타이머</span></div>
-                    <div class="app-icon-wrapper" onclick="openPopup('https://toolkit.i-scream.co.kr/apps/marble/?v=3.3.8&loc=other', 1500, 850)"><div class="app-icon-box bg-app-purple"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#7e22ce" stroke-width="2.5"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></div><span class="app-label">랜덤레이스</span></div>
-                    <div class="app-icon-wrapper" onclick="openPopup('https://toolkit.i-scream.co.kr/apps/randombox/?v=3.3.8&loc=other', 1500, 850)"><div class="app-icon-box bg-app-gray"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#4b5563" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg></div><span class="app-label">랜덤 뽑기</span></div>
-                    <div class="app-icon-wrapper" onclick="toggleBlackout()"><div class="app-icon-box bg-app-red"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#be123c" stroke-width="2.5"><path d="M12 2v10M18.4 6.6a9 9 0 1 1-12.77.04"/></svg></div><span class="app-label">블랙 아웃</span></div>
-                </div>
+        <div class="dock-container">
+            <div class="dock-bar">
+                <div class="app-icon-wrapper" onclick="openApp('timer')"><div class="app-icon-box bg-app-blue"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0369a1" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><span class="app-label">정리시간</span></div>
+                <div class="app-icon-wrapper" onclick="openPopup('https://toolkit.i-scream.co.kr/apps/dice/?v=3.3.8&loc=other', 750, 425)"><div class="app-icon-box bg-app-green"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2.5"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="12" cy="12" r="1.5"/></svg></div><span class="app-label">주사위</span></div>
+                <div class="app-icon-wrapper" onclick="openPopup('https://toolkit.i-scream.co.kr/apps/timer/?loc=other', 1500, 850)"><div class="app-icon-box bg-app-yellow"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2.5"><path d="M5 22h14M5 2h14M17 22c0-3.1-2-6-5-6s-5 2.9-5 6M17 2c0 3.1-2 6-5 6s-5-2.9-5-6M12 10.5v3"/></svg></div><span class="app-label">타이머</span></div>
+                <div class="app-icon-wrapper" onclick="openPopup('https://toolkit.i-scream.co.kr/apps/marble/?v=3.3.8&loc=other', 1500, 850)"><div class="app-icon-box bg-app-purple"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#7e22ce" stroke-width="2.5"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></div><span class="app-label">랜덤레이스</span></div>
+                <div class="app-icon-wrapper" onclick="openPopup('https://toolkit.i-scream.co.kr/apps/randombox/?v=3.3.8&loc=other', 1500, 850)"><div class="app-icon-box bg-app-gray"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#4b5563" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg></div><span class="app-label">랜덤 뽑기</span></div>
+                <div class="app-icon-wrapper" onclick="toggleBlackout()"><div class="app-icon-box bg-app-red"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#be123c" stroke-width="2.5"><path d="M12 2v10M18.4 6.6a9 9 0 1 1-12.77.04"/></svg></div><span class="app-label">블랙 아웃</span></div>
             </div>
         </div>
     </div>
 
     <script>
         function adjustScale() {
-            const scaler = document.getElementById('app-scaler'), targetWidth = 1920, currentWidth = window.innerWidth;
-            if (currentWidth < 1850) { 
-                const scale = currentWidth / targetWidth;
-                scaler.style.transform = `scale(${scale})`; scaler.style.width = (100 / scale) + "%"; scaler.style.height = (100 / scale) + "%";
-            } else { scaler.style.transform = "none"; scaler.style.width = "100%"; scaler.style.height = "100%"; }
+            const scaler = document.getElementById('app-scaler');
+            const windowW = window.innerWidth, windowH = window.innerHeight;
+            const targetW = 1920, targetH = 1080;
+            const scale = Math.min(windowW / targetW, windowH / targetH);
+            scaler.style.transform = `translate(-50%, -50%) scale(${scale})`;
         }
         window.addEventListener('resize', adjustScale);
 
@@ -328,75 +286,41 @@
             const top = (window.screen.availHeight - h) / 2 + (window.screenTop || window.screenY || 0);
             window.open(url, '_blank', `width=${w},height=${h},top=${top},left=${left},resizable=yes,scrollbars=yes,menubar=no,toolbar=no`);
         }
-
-        function openApp(appId) {
-            document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
-            document.getElementById(`${appId}-modal`).style.display = 'flex';
-        }
-
-        function closeAppModals(e) {
-            if (e.target.classList.contains('modal-overlay')) {
-                e.target.style.display = 'none';
-                if(e.target.id === 'timer-modal' && !isTimerRunning) resetCleanupTimer();
-            }
-        }
+        function openApp(appId) { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); document.getElementById(`${appId}-modal`).style.display = 'flex'; }
+        function closeAppModals(e) { if (e.target.classList.contains('modal-overlay')) { e.target.style.display = 'none'; if(e.target.id === 'timer-modal' && !isTimerRunning) resetCleanupTimer(); } }
 
         let cleanupInterval, cleanupSeconds = 120, isTimerRunning = false;
         function toggleCleanupTimer() {
             const btn = document.getElementById('timer-ctrl-btn'), icon = document.getElementById('ctrl-icon');
-            if (isTimerRunning) {
-                clearInterval(cleanupInterval); icon.innerHTML = '<path d="M8 5v14l11-7z"/>'; isTimerRunning = false;
-            } else {
-                cleanupInterval = setInterval(updateCleanupTimer, 1000); icon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; isTimerRunning = true;
-            }
+            if (isTimerRunning) { clearInterval(cleanupInterval); icon.innerHTML = '<path d="M8 5v14l11-7z"/>'; isTimerRunning = false;
+            } else { cleanupInterval = setInterval(updateCleanupTimer, 1000); icon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; isTimerRunning = true; }
         }
-
         function updateCleanupTimer() {
-            if (cleanupSeconds <= 0) {
-                clearInterval(cleanupInterval); document.getElementById('cleanup-display').textContent = "다 했어요!";
-                document.getElementById('cleanup-bar').style.width = '0%'; document.getElementById('runner-icon').textContent = "🏁";
-                isTimerRunning = false; return;
-            }
-            cleanupSeconds--;
-            const m = Math.floor(cleanupSeconds / 60), s = cleanupSeconds % 60;
+            if (cleanupSeconds <= 0) { clearInterval(cleanupInterval); document.getElementById('cleanup-display').textContent = "다 했어요!"; document.getElementById('cleanup-bar').style.width = '0%'; document.getElementById('runner-icon').textContent = "🏁"; isTimerRunning = false; return; }
+            cleanupSeconds--; const m = Math.floor(cleanupSeconds / 60), s = cleanupSeconds % 60;
             document.getElementById('cleanup-display').textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
             document.getElementById('cleanup-bar').style.width = `${(cleanupSeconds / 120) * 100}%`;
         }
-
-        function resetCleanupTimer() {
-            clearInterval(cleanupInterval); cleanupSeconds = 120; isTimerRunning = false;
-            document.getElementById('cleanup-display').textContent = "02:00"; document.getElementById('cleanup-bar').style.width = '100%';
-            document.getElementById('runner-icon').textContent = "🐰"; document.getElementById('ctrl-icon').innerHTML = '<path d="M8 5v14l11-7z"/>';
-        }
-
-        function toggleBlackout() {
-            const el = document.getElementById('blackout-overlay');
-            el.style.display = (el.style.display === 'block') ? 'none' : 'block';
-        }
+        function resetCleanupTimer() { clearInterval(cleanupInterval); cleanupSeconds = 120; isTimerRunning = false; document.getElementById('cleanup-display').textContent = "02:00"; document.getElementById('cleanup-bar').style.width = '100%'; document.getElementById('runner-icon').textContent = "🐰"; document.getElementById('ctrl-icon').innerHTML = '<path d="M8 5v14l11-7z"/>'; }
+        function toggleBlackout() { const el = document.getElementById('blackout-overlay'); el.style.display = (el.style.display === 'block') ? 'none' : 'block'; }
 
         function updateScheduleHighlight() {
             const now = new Date(), currentMin = now.getHours() * 60 + now.getMinutes();
             const items = document.querySelectorAll('.schedule-item'), indicator = document.getElementById('break-indicator');
             let anyClassHighlighted = false, breakIndex = -1;
-
             items.forEach((item, index) => {
                 const timeText = item.querySelector('.schedule-time')?.textContent;
                 if (!timeText) return;
                 const match = timeText.match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
                 if (match) {
-                    let sH = parseInt(match[1]); if (sH < 8) sH += 12;
-                    const sMin = sH * 60 + parseInt(match[2]);
-                    let eH = parseInt(match[3]); if (eH < 8) eH += 12; 
-                    const eMin = eH * 60 + parseInt(match[4]);
-                    if (currentMin >= sMin && currentMin < eMin) {
-                        item.classList.add('active-period'); anyClassHighlighted = true;
-                    } else { item.classList.remove('active-period'); }
+                    let sH = parseInt(match[1]); if (sH < 8) sH += 12; const sMin = sH * 60 + parseInt(match[2]);
+                    let eH = parseInt(match[3]); if (eH < 8) eH += 12; const eMin = eH * 60 + parseInt(match[4]);
+                    if (currentMin >= sMin && currentMin < eMin) { item.classList.add('active-period'); anyClassHighlighted = true; } else { item.classList.remove('active-period'); }
                     if (index < items.length - 1) {
                         const nText = items[index+1].querySelector('.schedule-time')?.textContent;
                         const nMatch = nText?.match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
                         if (nMatch) {
-                            let nsH = parseInt(nMatch[1]); if (nsH < 8) nsH += 12;
-                            const nsMin = nsH * 60 + parseInt(nMatch[2]);
+                            let nsH = parseInt(nMatch[1]); if (nsH < 8) nsH += 12; const nsMin = nsH * 60 + parseInt(nMatch[2]);
                             if (currentMin >= eMin && currentMin < nsMin) breakIndex = index + 1;
                         }
                     }
@@ -404,21 +328,13 @@
             });
             if (breakIndex !== -1 && !anyClassHighlighted) {
                 indicator.style.display = 'flex'; 
-                indicator.style.top = (110 * breakIndex) + 'px'; 
+                indicator.style.top = (130 * breakIndex) + 'px'; // 70px 폰트 크기에 최적화된 130px 간격 반영
             } else { indicator.style.display = 'none'; }
         }
 
         function updateClock() {
-            const now = new Date();
-            const ampm = now.getHours() >= 12 ? '오후' : '오전';
-            const hours = now.getHours() % 12 || 12;
-            
-            // 날짜 폰트 설정 (청록색 포인트 적용)
-            document.getElementById('display-date').innerHTML = 
-                `<span class="text-cyan-point">${now.getMonth() + 1}</span>월 ` +
-                `<span class="text-cyan-point">${now.getDate()}</span>일 ` +
-                `<span class="text-cyan-point">${["일","월","화","수","목","금","토"][now.getDay()]}</span>요일`;
-            
+            const now = new Date(); const ampm = now.getHours() >= 12 ? '오후' : '오전'; const hours = now.getHours() % 12 || 12;
+            document.getElementById('display-date').innerHTML = `<span class="text-cyan-point">${now.getMonth() + 1}</span>월 <span class="text-cyan-point">${now.getDate()}</span>일 <span class="text-cyan-point">${["일","월","화","수","목","금","토"][now.getDay()]}</span>요일`;
             document.getElementById('display-time').textContent = `${String(hours).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
             document.getElementById('display-ampm').textContent = ampm;
             updateScheduleHighlight();
@@ -430,13 +346,10 @@
             else { input.style.color = c; input.focus(); }
             localStorage.setItem('chalk_color', c);
         }
-
         function updateChalkStyle() {
             const s = document.getElementById('font-size-input').value, input = document.getElementById('blackboard-input');
             input.style.fontSize = s + 'px'; localStorage.setItem('chalk_size', s);
         }
-
-        function showClearModal() { document.getElementById('confirm-modal').style.display = 'flex'; }
         function closeModal() { document.getElementById('confirm-modal').style.display = 'none'; }
         function executeClear() { document.getElementById('blackboard-input').innerHTML = ""; localStorage.removeItem('class_note'); closeModal(); }
 
@@ -460,9 +373,7 @@
                 const res = await fetch(`${gas}?sheet=학생용_바탕화면`), data = await res.json(), now = new Date();
                 const todayData = data[["일","월","화","수","목","금","토"][now.getDay()]];
                 if (todayData) renderSchedule(Array.isArray(todayData) ? todayData : todayData[Object.keys(todayData)[0]]);
-            } catch (e) {
-                renderSchedule(["1교시 09:00-09:40", "2교시 09:50-10:30", "3교시 10:40-11:20", "4교시 11:30-12:10", "점심시간 12:10-1:10", "5교시 1:10-1:50"]);
-            }
+            } catch (e) { renderSchedule(["1교시 09:00-09:40", "2교시 09:50-10:30", "3교시 10:40-11:20", "4교시 11:30-12:10", "점심시간 12:10-1:10", "5교시 1:10-1:50"]); }
         }
 
         window.onload = () => {
