@@ -48,11 +48,13 @@
             border: 1px solid #e5e7eb;
         }
 
-        /* 윈도우 헤더 - 도트 간격 고정 */
+        /* 윈도우 헤더 - 상단 테두리 곡률 보정 */
         .window-header {
             background: #f3f4f6; padding: 10px 18px; display: flex;
             gap: 8px; border-bottom: 1px solid #e5e7eb; height: 32px; flex-shrink: 0;
             align-items: center; justify-content: flex-start;
+            border-top-left-radius: 0.75rem;
+            border-top-right-radius: 0.75rem;
         }
 
         .dot-gray { width: 10px; height: 10px; border-radius: 50%; background: #d1d5db; flex-shrink: 0; }
@@ -68,14 +70,12 @@
             border: 1px solid #e5e7eb; display: flex; align-items: center; padding: 0 10px; gap: 8px;
         }
 
-        /* 칠판 내부 여백 20px */
         #blackboard-input {
             width: 100%; height: 100%; padding: 20px; border: none; outline: none;
             overflow-y: auto; line-height: 1.6; color: #333; font-weight: bold;
             white-space: pre-wrap; word-break: break-all; user-select: text;
         }
 
-        /* 칠판 기능형 도트 */
         .color-dot {
             width: 11px; height: 11px; border-radius: 50%; cursor: pointer;
             transition: transform 0.1s, box-shadow 0.1s;
@@ -84,7 +84,6 @@
 
         #display-time { font-family: 'Public Sans', sans-serif; letter-spacing: -0.02em; }
         
-        /* 폰트 입력창 너비 40px */
         #font-size-input {
             background: #f8fafc; border: none; outline: none;
             width: 40px; height: 18px; border-radius: 4px;
@@ -98,7 +97,7 @@
             display: grid;
             grid-template-columns: 220px 1fr;
             align-items: center;
-            padding: 10px 15px 10px 20px; 
+            padding: 10px 15px 10px 15px; /* [수정] 왼쪽 여백 15px로 축소 */
             border-bottom: 1px solid #f3f4f6; 
             font-size: 45px;
             font-weight: 500;
@@ -108,16 +107,21 @@
         }
         
         .schedule-label { color: #0891b2; font-weight: 700; text-align: center; line-height: 1; }
-        .schedule-time { padding-left: 25px; font-family: 'Public Sans', sans-serif; font-weight: 400; color: #6b7280; line-height: 1; white-space: nowrap; }
-
-        /* [보정] 1교시 시간 부분 자간 -0.04em 적용 */
-        .schedule-item:first-child .schedule-time {
-            letter-spacing: -0.04em;
+        .schedule-time { 
+            padding-left: 20px; /* [수정] 교시와 시간 사이 간격 20px로 축소 */
+            font-family: 'Public Sans', sans-serif; font-weight: 400; 
+            color: #6b7280; line-height: 1; white-space: nowrap; 
         }
+
+        /* [자간 보정] */
+        .spacing-1st .schedule-time { letter-spacing: -0.035em; }
+        .spacing-2nd .schedule-time { letter-spacing: -0.015em; }
+        .spacing-3rd .schedule-time { letter-spacing: 0.01em; }
+        .spacing-lunch .schedule-time { letter-spacing: 0.02em; }
+        .spacing-5th .schedule-time { letter-spacing: 0.01em; }
 
         .active-period { background-color: #fff9db !important; }
 
-        /* 쉬는시간 화살표 (골든 옐로우) */
         #break-indicator {
             position: absolute; left: -12px; width: calc(100% + 12px); height: 5px;
             display: none; align-items: center; pointer-events: none; z-index: 50;
@@ -133,7 +137,7 @@
 
         @keyframes arrowBounce { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(6px); } }
 
-        /* 하단 도크 바 (화사한 오리지널 디자인) */
+        /* 하단 도크 바 */
         .dock-container {
             position: absolute; bottom: 70px; left: 0; right: 0;
             display: flex; justify-content: center; pointer-events: none; z-index: 100;
@@ -159,7 +163,6 @@
         .bg-app-gray { background: linear-gradient(145deg, #f9fafb, #f3f4f6); }
         .bg-app-red { background: linear-gradient(145deg, #fff1f2, #ffe4e6); }
 
-        /* 위젯 수치 */
         .date-weather-window-width { width: 800px; height: 200px; } 
         .clock-window-width { width: 550px; height: 200px; }
         .schedule-window-width { width: 550px; } 
@@ -173,7 +176,6 @@
             background: #fee2e2; font-weight: bold; font-size: 10px; line-height: 0;
         }
 
-        /* 모달 시스템 */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 1920px; height: 1080px; background: rgba(0,0,0,0.2); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; z-index: 1000; }
         .modal-content { background: white; padding: 60px; border-radius: 40px; box-shadow: 0 30px 80px rgba(0,0,0,0.2); text-align: center; }
         #blackout-overlay { position: fixed; top: 0; left: 0; width: 1920px; height: 1080px; background: black; display: none; z-index: 2000; }
@@ -224,17 +226,15 @@
             <div class="window-frame clock-window-width">
                 <div class="window-header"><div class="dot-gray"></div><div class="dot-gray"></div><div class="dot-gray"></div></div>
                 <div class="flex-grow flex items-center justify-center relative">
-                    <div class="flex items-end gap-5">
+                    <div class="relative flex items-center justify-center">
                         <div id="display-time" class="text-[125px] font-black leading-none">00:00</div>
-                        <div id="display-ampm" class="text-[40px] font-bold pb-4 text-gray-500">--</div>
+                        <div id="display-ampm" class="absolute left-full ml-4 bottom-2 text-[25px] font-bold text-gray-500 whitespace-nowrap">--</div>
                     </div>
                 </div>
             </div>
         </header>
 
-        <!-- align-items: flex-start를 사용하여 시정표 길이에 따라 칠판 높이가 변하지 않도록 함 -->
         <main class="flex gap-12 items-start" style="min-height: 580px;"> 
-            <!-- 칠판 상자: 580px 고정 높이 -->
             <div class="window-frame flex-grow" style="height: 580px;">
                 <div class="browser-header">
                     <div class="flex gap-2 items-center">
@@ -253,7 +253,6 @@
                     <div id="blackboard-input" contenteditable="true" spellcheck="false"></div>
                 </div>
             </div>
-            <!-- 시정표 상자: 동적 연동 데이터에 맞춰 높이 자동 조절 -->
             <div class="window-frame schedule-window-width" style="height: fit-content; overflow: visible;">
                 <div class="window-header flex justify-between items-center pr-4">
                     <div class="flex gap-2"><div class="dot-gray"></div><div class="dot-gray"></div><div class="dot-gray"></div></div>
@@ -360,7 +359,6 @@
         function setChalkColor(c) {
             const blackboard = document.getElementById('blackboard-input');
             blackboard.focus(); 
-            // 부분 색상 변경 기능 복구
             document.execCommand('foreColor', false, c);
             localStorage.setItem('chalk_color', c);
         }
@@ -384,6 +382,15 @@
             items.forEach(item => {
                 const div = document.createElement('div'); div.className = 'schedule-item';
                 const parts = item.trim().split(/\s+/);
+                const label = parts[0];
+                
+                // 각 교시 라벨에 따른 자간 클래스 부여
+                if (label.includes("1교시")) div.classList.add("spacing-1st");
+                else if (label.includes("2교시")) div.classList.add("spacing-2nd");
+                else if (label.includes("3교시")) div.classList.add("spacing-3rd");
+                else if (label.includes("점심시간")) div.classList.add("spacing-lunch");
+                else if (label.includes("5교시")) div.classList.add("spacing-5th");
+
                 if (parts.length >= 2) div.innerHTML = `<span class="schedule-label">${parts[0]}</span><span class="schedule-time">${parts.slice(1).join(' ')}</span>`;
                 else div.innerHTML = `<span class="schedule-label" style="width: 100%; text-align: left;">${item}</span>`;
                 list.appendChild(div);
@@ -398,7 +405,6 @@
                 const todayData = data[["일","월","화","수","목","금","토"][now.getDay()]];
                 if (todayData) renderSchedule(Array.isArray(todayData) ? todayData : todayData[Object.keys(todayData)[0]]);
             } catch (e) { 
-                // 연동 실패 시 기본 시간표 (실제로는 시트에서 가져옴)
                 renderSchedule(["1교시 09:00-09:40", "2교시 09:50-10:30", "3교시 10:40-11:20", "4교시 11:30-12:10", "점심시간 12:10-1:10", "5교시 1:10-1:50"]); 
             }
         }
