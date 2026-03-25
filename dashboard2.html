@@ -48,7 +48,7 @@
             border: 1px solid #e5e7eb;
         }
 
-        /* 윈도우 헤더 - 상단 테두리 곡률 보정 */
+        /* 윈도우 헤더 - 모든 창의 윗부분을 둥글게 강제 고정 */
         .window-header {
             background: #f3f4f6; padding: 10px 18px; display: flex;
             gap: 8px; border-bottom: 1px solid #e5e7eb; height: 32px; flex-shrink: 0;
@@ -97,7 +97,7 @@
             display: grid;
             grid-template-columns: 220px 1fr;
             align-items: center;
-            padding: 10px 15px 10px 15px; /* [수정] 왼쪽 여백 15px로 축소 */
+            padding: 10px 15px 10px 15px; 
             border-bottom: 1px solid #f3f4f6; 
             font-size: 45px;
             font-weight: 500;
@@ -107,11 +107,7 @@
         }
         
         .schedule-label { color: #0891b2; font-weight: 700; text-align: center; line-height: 1; }
-        .schedule-time { 
-            padding-left: 20px; /* [수정] 교시와 시간 사이 간격 20px로 축소 */
-            font-family: 'Public Sans', sans-serif; font-weight: 400; 
-            color: #6b7280; line-height: 1; white-space: nowrap; 
-        }
+        .schedule-time { padding-left: 20px; font-family: 'Public Sans', sans-serif; font-weight: 400; color: #6b7280; line-height: 1; white-space: nowrap; }
 
         /* [자간 보정] */
         .spacing-1st .schedule-time { letter-spacing: -0.035em; }
@@ -137,7 +133,7 @@
 
         @keyframes arrowBounce { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(6px); } }
 
-        /* 하단 도크 바 */
+        /* 도크 바 */
         .dock-container {
             position: absolute; bottom: 70px; left: 0; right: 0;
             display: flex; justify-content: center; pointer-events: none; z-index: 100;
@@ -163,7 +159,9 @@
         .bg-app-gray { background: linear-gradient(145deg, #f9fafb, #f3f4f6); }
         .bg-app-red { background: linear-gradient(145deg, #fff1f2, #ffe4e6); }
 
+        /* 위젯 수치 */
         .date-weather-window-width { width: 800px; height: 200px; } 
+        .blank-window-width { width: 354px; height: 200px; } 
         .clock-window-width { width: 550px; height: 200px; }
         .schedule-window-width { width: 550px; } 
 
@@ -176,6 +174,11 @@
             background: #fee2e2; font-weight: bold; font-size: 10px; line-height: 0;
         }
 
+        /* 카드 창 전용 버튼 스타일 */
+        .card-btn-primary { background-color: #bae6fd; color: #ffffff; font-weight: 700; padding: 6px 16px; border-radius: 8px; font-size: 18px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .card-btn-secondary { background-color: #e5e7eb; color: #6b7280; font-weight: 700; padding: 6px 20px; border-radius: 8px; font-size: 18px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+        /* 모달 시스템 */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 1920px; height: 1080px; background: rgba(0,0,0,0.2); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; z-index: 1000; }
         .modal-content { background: white; padding: 60px; border-radius: 40px; box-shadow: 0 30px 80px rgba(0,0,0,0.2); text-align: center; }
         #blackout-overlay { position: fixed; top: 0; left: 0; width: 1920px; height: 1080px; background: black; display: none; z-index: 2000; }
@@ -187,7 +190,6 @@
     <div id="app-scaler">
         <div id="blackout-overlay"><div class="exit-blackout" onclick="toggleBlackout()"><svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" cy="2" x2="12" y2="12"></line></svg></div></div>
 
-        <!-- 확인 모달 -->
         <div id="confirm-modal" class="modal-overlay">
             <div class="modal-content">
                 <p class="text-2xl font-bold mb-8">정말 모두 삭제하겠습니까?</p>
@@ -215,7 +217,7 @@
             </div>
         </div>
 
-        <header class="flex justify-between items-start mb-[50px]">
+        <header class="flex gap-12 items-start mb-[50px]">
             <div class="window-frame date-weather-window-width">
                 <div class="window-header"><div class="dot-gray"></div><div class="dot-gray"></div><div class="dot-gray"></div></div>
                 <div class="flex-grow flex items-center justify-center px-10">
@@ -223,6 +225,33 @@
                     <span id="weather-icon">--</span>
                 </div>
             </div>
+
+            <!-- [수정] 카드형 멘트 창 (image_7a555b.png 스타일 반영) -->
+            <div class="window-frame blank-window-width">
+                <div class="window-header"><div class="dot-gray"></div><div class="dot-gray"></div><div class="dot-gray"></div></div>
+                <div class="flex-grow flex flex-col p-4">
+                    <div class="flex flex-grow items-center gap-4">
+                        <!-- 이미지 영역 (SVG 일러스트) -->
+                        <div class="w-28 h-28 bg-blue-50 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center">
+                            <svg viewBox="0 0 100 100" class="w-full h-full">
+                                <rect width="100" height="100" fill="#f0f9ff"/>
+                                <path d="M0 80 Q 25 60, 50 80 T 100 80 V 100 H 0 Z" fill="#86efac"/>
+                                <path d="M30 85 Q 50 70, 70 85 T 110 85 V 100 H 30 Z" fill="#4ade80"/>
+                                <circle cx="80" cy="30" r="10" fill="#fef08a"/>
+                                <path d="M20 40 Q 30 30, 40 40 T 60 40" stroke="#bae6fd" stroke-width="2" fill="none"/>
+                            </svg>
+                        </div>
+                        <!-- 텍스트 영역 -->
+                        <div id="today-quote" class="flex-grow text-[22px] font-bold text-gray-700 leading-snug break-keep text-left pr-2"></div>
+                    </div>
+                    <!-- 하단 버튼 영역 -->
+                    <div class="flex gap-3 justify-end mt-2 pr-2 mb-2">
+                        <button class="card-btn-primary">자신 있어요!</button>
+                        <button class="card-btn-secondary">음..</button>
+                    </div>
+                </div>
+            </div>
+
             <div class="window-frame clock-window-width">
                 <div class="window-header"><div class="dot-gray"></div><div class="dot-gray"></div><div class="dot-gray"></div></div>
                 <div class="flex-grow flex items-center justify-center relative">
@@ -253,6 +282,7 @@
                     <div id="blackboard-input" contenteditable="true" spellcheck="false"></div>
                 </div>
             </div>
+
             <div class="window-frame schedule-window-width" style="height: fit-content; overflow: visible;">
                 <div class="window-header flex justify-between items-center pr-4">
                     <div class="flex gap-2"><div class="dot-gray"></div><div class="dot-gray"></div><div class="dot-gray"></div></div>
@@ -293,6 +323,24 @@
                 const weatherMap = { 0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️", 45: "🌫️", 48: "🌫️", 51: "🌦️", 53: "🌦️", 55: "🌦️", 61: "🌧️", 63: "🌧️", 65: "🌧️", 71: "❄️", 73: "❄️", 75: "❄️", 80: "🌦️", 81: "🌦️", 82: "🌦️", 95: "⚡" };
                 document.getElementById('weather-icon').textContent = weatherMap[code] || "🌤️";
             } catch (e) { document.getElementById('weather-icon').textContent = "🌤️"; }
+        }
+
+        function setTodayQuote() {
+            const quotes = [
+                "작은 습관이 모여서 멋진 나를 만들어요.",
+                "실수는 실패가 아니라 배우는 과정이에요.",
+                "어제보다 조금 더 성장한 오늘을 응원해요.",
+                "친구의 장점을 먼저 찾아 칭찬해볼까요?",
+                "내가 한 친절이 누군가에게는 큰 힘이 돼요.",
+                "포기하지 않는 마음이 가장 큰 용기입니다.",
+                "오늘 하루, 나 자신을 많이 사랑해 주세요.",
+                "함께하면 더 멀리, 더 즐겁게 갈 수 있어요.",
+                "할 수 있다고 믿는 순간, 길이 열릴 거예요.",
+                "서로 다름을 존중하는 마음이 아름다워요.",
+                "오늘도 친구에게 먼저 웃으며 인사해봐요."
+            ];
+            const randomIndex = Math.floor(Math.random() * quotes.length);
+            document.getElementById('today-quote').textContent = quotes[randomIndex];
         }
 
         function openPopup(url, w, h) {
@@ -384,7 +432,6 @@
                 const parts = item.trim().split(/\s+/);
                 const label = parts[0];
                 
-                // 각 교시 라벨에 따른 자간 클래스 부여
                 if (label.includes("1교시")) div.classList.add("spacing-1st");
                 else if (label.includes("2교시")) div.classList.add("spacing-2nd");
                 else if (label.includes("3교시")) div.classList.add("spacing-3rd");
@@ -411,6 +458,7 @@
 
         window.onload = () => {
             adjustScale(); updateClock(); setInterval(updateClock, 1000); fetchSchedule(); fetchWeather(); setInterval(fetchWeather, 1000 * 60 * 60); 
+            setTodayQuote();
             const input = document.getElementById('blackboard-input');
             const savedNote = localStorage.getItem('class_note'), savedColor = localStorage.getItem('chalk_color'), savedSize = localStorage.getItem('chalk_size');
             if(savedNote) input.innerHTML = savedNote; 
