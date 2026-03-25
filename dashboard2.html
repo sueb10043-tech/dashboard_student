@@ -9,6 +9,14 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;700;900&family=Gowun+Dodum:wght@400;700&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
+        /* 폰트 깨짐 방지 및 가독성 최적화 */
+        * {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+            backface-visibility: hidden;
+        }
+
         body {
             font-family: 'Gowun Dodum', 'Noto Sans KR', sans-serif;
             margin: 0; padding: 0; width: 100vw; height: 100vh;
@@ -16,12 +24,13 @@
             user-select: none;
         }
 
-        /* 공통 프레임 */
+        /* 공통 윈도우 프레임 */
         .window-frame {
             background: white; border-radius: 0.5rem;
             box-shadow: 0 4px 15px rgba(0,0,0,0.05);
             display: flex; flex-direction: column; overflow: hidden;
             border: 1px solid #e5e7eb;
+            transform: translateZ(0);
         }
 
         .window-header {
@@ -31,7 +40,7 @@
 
         .dot { width: 8px; height: 8px; border-radius: 50%; background: #d1d5db; }
 
-        /* 칠판 도구바 */
+        /* 칠판 상단 도구 */
         .browser-header {
             background: #f3f4f6; padding: 6px 16px; display: flex;
             align-items: center; gap: 12px; border-bottom: 1px solid #e5e7eb;
@@ -50,14 +59,13 @@
 
         #display-time { font-family: 'Public Sans', sans-serif; letter-spacing: 0.05em; }
         #display-date { font-family: 'Gowun Dodum', sans-serif; letter-spacing: 0; }
-        #display-ampm { font-family: 'Gowun Dodum', sans-serif; }
 
-        /* 글씨 크기 입력창 화살표 제거 */
+        /* 입력창 화살표 제거 */
         input[type=number]::-webkit-inner-spin-button,
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         input[type=number] { -moz-appearance: textfield; }
 
-        /* 시정표 레이아웃 - 고수 수치 */
+        /* 시정표 레이아웃 */
         .schedule-item {
             display: flex; align-items: flex-end; 
             padding: 0px 10px 15px 21px; 
@@ -79,7 +87,7 @@
 
         .active-period { background-color: #fff9db !important; }
 
-        /* 쉬는시간 골든 옐로우 지시자 */
+        /* 쉬는시간 화살표 (골든 옐로우) */
         #break-indicator {
             position: absolute; left: -12px; width: calc(100% + 12px); height: 3px;
             display: none; align-items: center; pointer-events: none; z-index: 50;
@@ -98,14 +106,14 @@
             50% { transform: translateX(4px); }
         }
 
-        /* 하단 도크 바 (바닥 10px 고정) */
+        /* 하단 도크 바 (바닥 70px 띄움 - 작업표시줄 공간) */
         .dock-container {
-            position: fixed; bottom: 10px; left: 0; right: 0;
+            position: fixed; bottom: 70px; left: 0; right: 0;
             display: flex; justify-content: center; z-index: 100; pointer-events: none; 
         }
 
         .dock-bar {
-            background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(15px);
+            background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(15px);
             border-radius: 1.5rem; padding: 10px 22px; display: flex; gap: 16px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 1px solid rgba(255, 255, 255, 0.5);
             align-items: center; pointer-events: auto; 
@@ -124,16 +132,21 @@
 
         .app-label { font-size: 9px; font-weight: 700; color: #64748b; text-align: center; letter-spacing: -0.02em; }
 
-        /* 삭제 버튼 ✕ 수평/수직 정중앙 */
         .btn-clear-all {
             margin-left: auto; color: #ef4444; cursor: pointer; width: 18px; height: 18px;
             display: flex; align-items: center; justify-content: center; border-radius: 50%;
-            background: #fee2e2; font-weight: bold; font-size: 10px; flex-shrink: 0;
-            line-height: 0; padding: 0;
+            background: #fee2e2; font-weight: bold; font-size: 10px; flex-shrink: 0; line-height: 0; padding: 0;
         }
 
-        /* 날씨 보정 -5px */
-        #weather-icon { font-size: 50px; margin-left: 20px; position: relative; top: -5px; }
+        /* --- 크기 보정 위젯 (가로 정렬 최적화) --- */
+        .date-weather-window-width { width: 600px; height: 150px; } 
+        /* 시계와 시정표 가로 길이를 430px로 동일하게 설정 */
+        .clock-window-width, .schedule-window-width { width: 430px; }
+        .clock-window-width { height: 150px; }
+
+        #weather-icon { font-size: 63px; margin-left: 25px; position: relative; top: -6px; }
+
+        .text-cyan-point { color: #0891b2; }
 
         /* 모달 시스템 */
         .modal-overlay {
@@ -146,7 +159,7 @@
             box-shadow: 0 20px 60px rgba(0,0,0,0.15); text-align: center;
         }
 
-        /* 정리시간 토끼 애니메이션 */
+        /* 정리시간 */
         .cleanup-modal-content { min-width: 480px; padding: 50px; }
         .progress-track {
             width: 100%; background: #f1f5f9; height: 20px; border-radius: 20px;
@@ -180,15 +193,13 @@
             color: white; cursor: pointer; display: flex; align-items: center; justify-content: center;
             box-shadow: 0 0 20px rgba(255,255,255,0.3); transition: all 0.3s; opacity: 0.5;
         }
-        .exit-blackout:hover { opacity: 1; transform: scale(1.1); border-color: white; box-shadow: 0 0 30px rgba(255,255,255,0.5); }
+        .exit-blackout:hover { opacity: 1; transform: scale(1.1); border-color: white; }
 
         .color-btn {
             width: 16px; height: 16px; border-radius: 50%; cursor: pointer;
             border: 1px solid rgba(0,0,0,0.1); transition: transform 0.1s;
         }
         .color-btn:hover { transform: scale(1.2); }
-        .date-weather-window-width { width: 480px; } 
-        .clock-window-width, .schedule-window-width { width: 330px; }
     </style>
 </head>
 <body class="pt-2 px-8 flex flex-col gap-6">
@@ -229,26 +240,26 @@
     </div>
 
     <header class="flex justify-between items-start">
-        <div class="window-frame date-weather-window-width" style="height: 120px;">
+        <div class="window-frame date-weather-window-width">
             <div class="window-header"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
             <div class="flex-grow flex items-center justify-center px-6">
-                <div id="display-date" class="text-[40px] font-bold whitespace-nowrap"></div>
+                <div id="display-date" class="text-[50px] font-bold whitespace-nowrap"></div>
                 <span id="weather-icon">--</span>
             </div>
         </div>
-        <div class="window-frame clock-window-width" style="height: 120px;">
+        <div class="window-frame clock-window-width">
             <div class="window-header"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
             <div class="flex-grow flex items-center justify-center relative">
-                <!-- 오전/오후가 추가된 시계 레이아웃 -->
-                <div class="flex items-end gap-2">
-                    <div id="display-time" class="text-[70px] font-black leading-none">00:00</div>
-                    <div id="display-ampm" class="text-[20px] font-bold pb-1 text-gray-500">--</div>
+                <div class="flex items-end gap-3">
+                    <div id="display-time" class="text-[88px] font-black leading-none">00:00</div>
+                    <div id="display-ampm" class="text-[25px] font-bold pb-2 text-gray-500">--</div>
                 </div>
             </div>
         </div>
     </header>
 
-    <main class="flex gap-8 h-[60vh]">
+    <!-- 메인 영역 높이 54vh (바탕화면용 최적 비율) -->
+    <main class="flex gap-8 h-[54vh]">
         <div class="window-frame flex-grow">
             <div class="browser-header">
                 <div class="flex gap-2">
@@ -314,9 +325,23 @@
     </div>
 
     <script>
-        const apiKey = ""; 
+        // 날씨 API (Open-Meteo)
+        async function fetchWeather() {
+            try {
+                const lat = 36.195; const lon = 128.093;
+                const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+                const data = await response.json();
+                const code = data.current_weather.weathercode;
+                const weatherMap = {
+                    0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️",
+                    45: "🌫️", 48: "🌫️", 51: "🌦️", 53: "🌦️", 55: "🌦️",
+                    61: "🌧️", 63: "🌧️", 65: "🌧️", 71: "❄️", 73: "❄️", 75: "❄️",
+                    80: "🌦️", 81: "🌦️", 82: "🌦️", 95: "⚡", 96: "⚡", 99: "⚡"
+                };
+                document.getElementById('weather-icon').textContent = weatherMap[code] || "🌤️";
+            } catch (error) { document.getElementById('weather-icon').textContent = "🌤️"; }
+        }
 
-        // 정중앙 팝업 창 함수
         function openPopup(url, w, h) {
             const left = (window.screen.availWidth - w) / 2 + (window.screenLeft || window.screenX || 0);
             const top = (window.screen.availHeight - h) / 2 + (window.screenTop || window.screenY || 0);
@@ -335,7 +360,6 @@
             }
         }
 
-        // 정리시간 타이머 로직
         let cleanupInterval; let cleanupSeconds = 120; let isTimerRunning = false;
         function toggleCleanupTimer() {
             const btn = document.getElementById('timer-ctrl-btn');
@@ -382,33 +406,26 @@
             el.style.display = (el.style.display === 'block') ? 'none' : 'block';
         }
 
-        // 시정표 실시간 강조 및 쉬는시간 화살표 로직
         function updateScheduleHighlight() {
             const now = new Date();
             const currentMin = now.getHours() * 60 + now.getMinutes();
             const items = document.querySelectorAll('.schedule-item');
             const indicator = document.getElementById('break-indicator');
-            
             let anyClassHighlighted = false;
             let breakIndex = -1;
 
             items.forEach((item, index) => {
                 const timeText = item.querySelector('.schedule-time')?.textContent;
                 if (!timeText) return;
-
                 const match = timeText.match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
                 if (match) {
                     let startH = parseInt(match[1]); if (startH < 8) startH += 12;
                     const startMin = startH * 60 + parseInt(match[2]);
                     let endH = parseInt(match[3]); if (endH < 8) endH += 12; 
                     const endMin = endH * 60 + parseInt(match[4]);
-
                     if (currentMin >= startMin && currentMin < endMin) {
                         item.classList.add('active-period'); anyClassHighlighted = true;
-                    } else {
-                        item.classList.remove('active-period');
-                    }
-
+                    } else { item.classList.remove('active-period'); }
                     if (index < items.length - 1) {
                         const nextTimeText = items[index+1].querySelector('.schedule-time')?.textContent;
                         const nextMatch = nextTimeText?.match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
@@ -420,38 +437,18 @@
                     }
                 }
             });
-
             if (breakIndex !== -1 && !anyClassHighlighted) {
                 indicator.style.display = 'flex'; indicator.style.top = (64 * breakIndex) + 'px';
             } else { indicator.style.display = 'none'; }
-        }
-
-        async function fetchWeather() {
-            try {
-                const weatherPrompt = "경북 김천시 어모면의 현재 날씨 상태를 나타내는 이모지 1개만 JSON 형식으로 알려줘. (예: { \"icon\": \"☀️\" })";
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: weatherPrompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { icon: { type: "STRING" } } } } })
-                });
-                const result = await response.json();
-                const weatherData = JSON.parse(result.candidates[0].content.parts[0].text);
-                document.getElementById('weather-icon').textContent = weatherData.icon;
-            } catch (error) { console.error("날씨 로드 실패:", error); }
         }
 
         function updateClock() {
             const now = new Date(); const month = now.getMonth() + 1; const date = now.getDate();
             const dayNames = ["일", "월", "화", "수", "목", "금", "토"]; const day = dayNames[now.getDay()];
             document.getElementById('display-date').innerHTML = `<span class="text-cyan-point">${month}</span>월 <span class="text-cyan-point">${date}</span>일 <span class="text-cyan-point">${day}</span>요일`;
-            
-            // 오전/오후 계산 로직
-            const hours = now.getHours();
-            const ampm = hours >= 12 ? '오후' : '오전';
-            let displayHours = hours % 12 || 12;
-            
+            const hours = now.getHours(); const ampm = hours >= 12 ? '오후' : '오전'; let displayHours = hours % 12 || 12;
             document.getElementById('display-time').textContent = `${String(displayHours).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
             document.getElementById('display-ampm').textContent = ampm;
-            
             updateScheduleHighlight();
         }
 
