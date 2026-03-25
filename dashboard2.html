@@ -75,7 +75,7 @@
             white-space: pre-wrap; word-break: break-all; user-select: text;
         }
 
-        /* 기능형 컬러 도트 */
+        /* 칠판 기능형 도트 */
         .color-dot {
             width: 11px; height: 11px; border-radius: 50%; cursor: pointer;
             transition: transform 0.1s, box-shadow 0.1s;
@@ -84,7 +84,7 @@
 
         #display-time { font-family: 'Public Sans', sans-serif; letter-spacing: -0.02em; }
         
-        /* 폰트 입력창 가로 40px 정밀 보정 */
+        /* 폰트 입력창 너비 40px */
         #font-size-input {
             background: #f8fafc; border: none; outline: none;
             width: 40px; height: 18px; border-radius: 4px;
@@ -110,9 +110,9 @@
         .schedule-label { color: #0891b2; font-weight: 700; text-align: center; line-height: 1; }
         .schedule-time { padding-left: 25px; font-family: 'Public Sans', sans-serif; font-weight: 400; color: #6b7280; line-height: 1; white-space: nowrap; }
 
-        /* 1교시 자간 -0.035em 적용 */
+        /* [보정] 1교시 시간 부분 자간 -0.04em 적용 */
         .schedule-item:first-child .schedule-time {
-            letter-spacing: -0.035em;
+            letter-spacing: -0.04em;
         }
 
         .active-period { background-color: #fff9db !important; }
@@ -199,7 +199,7 @@
         <div id="timer-modal" class="modal-overlay" onclick="closeAppModals(event)">
             <div class="modal-content" style="min-width: 650px;" onclick="event.stopPropagation()">
                 <h2 class="text-4xl font-bold mb-10 text-gray-400 uppercase tracking-widest">정리시간</h2>
-                <div id="cleanup-display" class="text-[180px] font-black text-blue-600 연관-none mb-12">02:00</div>
+                <div id="cleanup-display" class="text-[180px] font-black text-blue-600 leading-none mb-12">02:00</div>
                 <div class="w-full bg-gray-100 h-10 rounded-full relative mb-14 overflow-visible">
                     <div class="finish-line absolute left-0 -top-10 text-3xl">🏁</div>
                     <div id="cleanup-bar" class="h-full rounded-full bg-blue-500 transition-all duration-1000 relative">
@@ -232,8 +232,8 @@
             </div>
         </header>
 
-        <!-- [해결] items-start를 주어 시정표 길이에 따라 칠판 높이가 동기화되지 않도록 함 -->
-        <main class="flex gap-12 items-start"> 
+        <!-- align-items: flex-start를 사용하여 시정표 길이에 따라 칠판 높이가 변하지 않도록 함 -->
+        <main class="flex gap-12 items-start" style="min-height: 580px;"> 
             <!-- 칠판 상자: 580px 고정 높이 -->
             <div class="window-frame flex-grow" style="height: 580px;">
                 <div class="browser-header">
@@ -253,7 +253,7 @@
                     <div id="blackboard-input" contenteditable="true" spellcheck="false"></div>
                 </div>
             </div>
-            <!-- 시정표 상자: 동적 높이 유지 -->
+            <!-- 시정표 상자: 동적 연동 데이터에 맞춰 높이 자동 조절 -->
             <div class="window-frame schedule-window-width" style="height: fit-content; overflow: visible;">
                 <div class="window-header flex justify-between items-center pr-4">
                     <div class="flex gap-2"><div class="dot-gray"></div><div class="dot-gray"></div><div class="dot-gray"></div></div>
@@ -398,7 +398,7 @@
                 const todayData = data[["일","월","화","수","목","금","토"][now.getDay()]];
                 if (todayData) renderSchedule(Array.isArray(todayData) ? todayData : todayData[Object.keys(todayData)[0]]);
             } catch (e) { 
-                // 실패 시 기본 데이터 로드 (실제로는 구글 시트에서 가져옵니다)
+                // 연동 실패 시 기본 시간표 (실제로는 시트에서 가져옴)
                 renderSchedule(["1교시 09:00-09:40", "2교시 09:50-10:30", "3교시 10:40-11:20", "4교시 11:30-12:10", "점심시간 12:10-1:10", "5교시 1:10-1:50"]); 
             }
         }
