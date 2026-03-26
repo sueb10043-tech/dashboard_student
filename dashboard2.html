@@ -62,7 +62,6 @@
         .blank-window-width { width: 374px; height: 200px; flex-shrink: 0; } 
         .clock-window-width { width: 550px; height: 200px; flex-shrink: 0; }
         
-        /* [복구] 시계 폰트 스타일 전용 설정 */
         #display-time { font-family: 'Public Sans', sans-serif; letter-spacing: -0.02em; }
 
         .dock-container { position: absolute; bottom: 70px; left: 0; right: 0; display: flex; justify-content: center; z-index: 100; pointer-events: none; }
@@ -145,7 +144,7 @@
             </div>
         </div>
 
-        <header class="flex gap-12 items-start mb-[50px]">
+        <header class="flex gap-12 items-start mb-[35px]"> <!-- [수정] 헤더 간격 50px -> 35px 축소 -->
             <div class="window-frame date-weather-window-width">
                 <div class="window-header"><div class="dot-gray"></div><div class="dot-gray"></div><div class="dot-gray"></div></div>
                 <div class="flex-grow flex items-center justify-center px-10"><div id="display-date" class="text-[80px] font-bold whitespace-nowrap"></div><span id="weather-icon" class="text-[90px] ml-5">🌤️</span></div>
@@ -170,7 +169,8 @@
         </header>
 
         <main class="flex gap-12 items-start"> 
-            <div class="window-frame flex-grow" style="height: 597px;">
+            <!-- [수정] 칠판 높이 597px -> 612px 확장 -->
+            <div class="window-frame flex-grow" style="height: 612px;">
                 <div class="browser-header">
                     <div class="flex gap-2 items-center">
                         <div class="color-dot w-4 h-4 rounded-full bg-red-500 cursor-pointer" onclick="setChalkColor('#ef4444')"></div>
@@ -216,10 +216,10 @@
 
         function updateClock() {
             const now = new Date(); 
-            const todayStr = now.toLocaleDateString('ko-KR'); // [수정] 한국 시간 기준 날짜 확인
+            const todayStr = now.toLocaleDateString('ko-KR');
             if (lastCheckedDate !== todayStr) { 
                 lastCheckedDate = todayStr; 
-                fetchEmotionData(); // 날짜 바뀌면 감정카드 갱신
+                fetchEmotionData();
             }
             const h = now.getHours() % 12 || 12;
             document.getElementById('display-date').innerHTML = `<span class="text-cyan-600">${now.getMonth() + 1}</span>월 <span class="text-cyan-600">${now.getDate()}</span>일 <span class="text-cyan-600">${["일","월","화","수","목","금","토"][now.getDay()]}</span>요일`;
