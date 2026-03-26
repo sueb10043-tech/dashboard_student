@@ -61,8 +61,7 @@
         .period-toggle-btn { 
             width: 28px; height: 20px; display: flex; align-items: center; justify-content: center; 
             border-radius: 4px; font-size: 11px; font-weight: 900; cursor: pointer; 
-            background: transparent; color: #6b7280; opacity: 0.1;
-            transition: all 0.3s ease;
+            background: transparent; color: #6b7280; opacity: 0.1; transition: all 0.3s ease;
         }
         .period-toggle-btn:hover { opacity: 0.5; background: rgba(0,0,0,0.05); }
         .period-toggle-btn.active { opacity: 0.8; color: #0891b2; background: rgba(8, 145, 178, 0.05); }
@@ -70,6 +69,8 @@
         .date-weather-window-width { width: 780px; height: 200px; flex-shrink: 0; } 
         .blank-window-width { width: 374px; height: 200px; flex-shrink: 0; } 
         .clock-window-width { width: 550px; height: 200px; flex-shrink: 0; }
+        
+        /* 시계 폰트 스타일 전용 설정 */
         #display-time { font-family: 'Public Sans', sans-serif; letter-spacing: -0.02em; }
 
         .dock-container { position: absolute; bottom: 70px; left: 0; right: 0; display: flex; justify-content: center; z-index: 100; pointer-events: none; }
@@ -119,7 +120,6 @@
             </div>
         </div>
 
-        <!-- 정리시간 모달 -->
         <div id="timer-modal" class="modal-overlay" onclick="closeAppModals(event)">
             <div class="modal-content" onclick="event.stopPropagation()">
                 <h2 id="timer-title" class="text-4xl font-bold mb-8 text-gray-400 uppercase tracking-widest">정리시간</h2>
@@ -149,7 +149,7 @@
             <div class="window-frame date-weather-window-width">
                 <div class="window-header"><div class="dot-gray"></div><div class="dot-gray"></div><div class="dot-gray"></div></div>
                 <div class="flex-grow flex items-center justify-center px-10">
-                    <div id="display-date" class="text-[80px] font-bold whitespace-nowrap"></div>
+                    <div id="display-date" class="text-[80px] font-bold whitespace-nowrap">로딩 중...</div>
                     <span id="weather-icon" class="text-[90px] ml-5">🌤️</span>
                 </div>
             </div>
@@ -157,10 +157,10 @@
                 <div class="window-header"><div class="dot-gray"></div><div class="dot-gray"></div><div class="dot-gray"></div></div>
                 <div class="flex-grow flex flex-col items-center justify-center px-[10px] py-5 text-center overflow-hidden">
                     <div id="emotion-word-container" class="w-full flex justify-center mb-3">
-                        <div id="emotion-word" class="font-black text-cyan-700 leading-none whitespace-nowrap" style="font-size: 60px;">로딩 중</div>
+                        <div id="emotion-word" class="font-black text-cyan-700 leading-none whitespace-nowrap" style="font-size: 60px;">반가워</div>
                     </div>
                     <div id="emotion-desc-container" class="w-full flex items-center justify-center">
-                        <div id="emotion-desc" class="font-bold text-gray-500 leading-snug break-keep" style="font-size: 30px;">데이터를 불러오는 중입니다.</div>
+                        <div id="emotion-desc" class="font-bold text-gray-500 leading-snug break-keep" style="font-size: 30px;">오늘 하루도 힘내세요!</div>
                     </div>
                 </div>
             </div>
@@ -200,13 +200,14 @@
                     <div class="flex gap-2"><div class="dot-gray"></div><div class="dot-gray"></div><div class="dot-gray"></div></div>
                     <div class="flex gap-1.5 items-center">
                         <div id="btn-4per" class="period-toggle-btn" onclick="toggleScheduleMode(4)">4</div>
-                        <div id="btn-5per" class="period-toggle-btn" onclick="toggleScheduleMode(5)">5</div>
+                        <div id="btn-5per" class="period-toggle-btn active" onclick="toggleScheduleMode(5)">5</div>
                     </div>
                 </div>
                 <div id="schedule-list" style="padding-bottom: 25px; position: relative;"><div id="break-indicator"></div></div>
             </div>
         </main>
 
+        <!-- 하단 독바 -->
         <div class="dock-container">
             <div class="dock-bar">
                 <div class="app-icon-wrapper" onclick="openApp('timer')"><div class="app-icon-box bg-app-blue"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0369a1" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><span class="app-label">정리시간</span></div>
@@ -219,81 +220,102 @@
         </div>
     </div>
 
+    <!-- Firebase SDK & 전역 로직 통합 스크립트 -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
         import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
         import { getFirestore, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
         const GAS_URL = "https://script.google.com/macros/s/AKfycbzoCgmF_cfpNOaImXQ7yY0UPOZ5eDuH1whp7NKTdEAvjPWGO6y5GzvafqySyy3Oul1l/exec";
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
+        
+        // 전역 상태 변수
+        let currentUser = null;
+        let isTimerRunning = false;
+        let cleanupInterval, cleanupSeconds = 120;
+        let blackboardSaveTimeout;
+        let lastCheckedDateISO = new Date().toISOString().split('T')[0];
+        let currentScheduleMode = 5;
+        let fetchedRawSchedule = null;
+
+        // Firebase 설정 (안전한 파싱)
+        let fbConfig = {};
+        try { fbConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}'); } catch(e) {}
+        const app = initializeApp(fbConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-        let currentUser = null, isTimerRunning = false, cleanupInterval, cleanupSeconds = 120, blackboardSaveTimeout;
-        let lastCheckedDateISO = new Date().toISOString().split('T')[0];
-        let currentScheduleMode = 5, fetchedRawSchedule = null;
-
-        // 유틸리티: 안전하게 JSON 파싱
+        // 1. 유틸리티 함수
         function safeParse(input) {
             if (typeof input === 'object' && input !== null) return input;
             try { return JSON.parse(input); } catch(e) { return null; }
         }
 
-        // Firestore 설정 저장/로드
-        async function saveSchedulePreference(mode) {
-            if (!currentUser) return;
-            try {
-                const ref = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'scheduleConfig');
-                await setDoc(ref, { mode: mode }, { merge: true });
-            } catch (e) { console.error("Firestore Save Error:", e); }
+        // 2. 통합 시계 및 날짜 체크 (중복 제거된 유일한 함수)
+        function refreshClock() {
+            const now = new Date();
+            const todayISO = now.toISOString().split('T')[0];
+
+            // 날짜 변경 시 데이터 재요청
+            if (lastCheckedDateISO !== todayISO) {
+                lastCheckedDateISO = todayISO;
+                fetchEmotionData();
+                fetchSchedule();
+            }
+
+            const h = now.getHours() % 12 || 12;
+            const m = String(now.getMinutes()).padStart(2, '0');
+            const dayMap = ["일","월","화","수","목","금","토"];
+
+            const dateEl = document.getElementById('display-date');
+            if(dateEl) dateEl.innerHTML = `<span class="text-cyan-600">${now.getMonth() + 1}</span>월 <span class="text-cyan-600">${now.getDate()}</span>일 <span class="text-cyan-600">${dayMap[now.getDay()]}</span>요일`;
+            
+            const timeEl = document.getElementById('display-time');
+            if(timeEl) timeEl.textContent = `${String(h).padStart(2, '0')}:${m}`;
+            
+            const ampmEl = document.getElementById('display-ampm');
+            if(ampmEl) ampmEl.textContent = now.getHours() >= 12 ? '오후' : '오전';
+
+            updateScheduleHighlight();
         }
 
-        async function loadSchedulePreference() {
-            if (!currentUser) return;
-            try {
-                const ref = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'scheduleConfig');
-                const snap = await getDoc(ref);
-                if (snap.exists()) {
-                    currentScheduleMode = snap.data().mode || 5;
-                    updateToggleButtons();
-                    renderSchedule();
-                }
-            } catch (e) { console.error("Firestore Load Error:", e); }
-        }
-
-        // 시정표 로직
-        window.toggleScheduleMode = function(mode) {
+        // 3. 시정표 로직 (버튼 저장 포함)
+        window.toggleScheduleMode = async function(mode) {
             currentScheduleMode = mode;
-            updateToggleButtons();
-            renderSchedule();
-            saveSchedulePreference(mode);
+            updateToggleButtonsUI();
+            renderScheduleList();
+            if (currentUser) {
+                try {
+                    const ref = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'scheduleConfig');
+                    await setDoc(ref, { mode: mode }, { merge: true });
+                } catch (e) {}
+            }
         };
 
-        function updateToggleButtons() {
-            const btn4 = document.getElementById('btn-4per');
-            const btn5 = document.getElementById('btn-5per');
-            if(btn4) btn4.classList.toggle('active', currentScheduleMode === 4);
-            if(btn5) btn5.classList.toggle('active', currentScheduleMode === 5);
+        function updateToggleButtonsUI() {
+            const b4 = document.getElementById('btn-4per'), b5 = document.getElementById('btn-5per');
+            if(b4) b4.classList.toggle('active', currentScheduleMode === 4);
+            if(b5) b5.classList.toggle('active', currentScheduleMode === 5);
         }
 
         async function fetchSchedule() {
             const dayMap = ["일","월","화","수","목","금","토"];
             const today = dayMap[new Date().getDay()];
+            const fallback = ["1교시 09:00-09:40", "2교시 09:50-10:30", "3교시 10:40-11:20", "4교시 11:30-12:10", "점심시간 12:10-13:10", "5교시 13:10-13:50"];
+            
             try {
                 const res = await fetch(`${GAS_URL}?sheet=학생용_바탕화면`);
                 const data = await res.json();
-                fetchedRawSchedule = (data && Array.isArray(data[today])) ? data[today] : ["1교시 09:00-09:40", "2교시 09:50-10:30", "3교시 10:40-11:20", "4교시 11:30-12:10", "점심시간 12:10-13:10", "5교시 13:10-13:50"];
+                fetchedRawSchedule = (data && Array.isArray(data[today])) ? data[today] : fallback;
             } catch (e) {
-                fetchedRawSchedule = ["1교시 09:00-09:40", "2교시 09:50-10:30", "3교시 10:40-11:20", "4교시 11:30-12:10", "점심시간 12:10-13:10", "5교시 13:10-13:50"];
+                fetchedRawSchedule = fallback;
             }
-            renderSchedule();
+            renderScheduleList();
         }
 
-        function renderSchedule() {
+        function renderScheduleList() {
             const list = document.getElementById('schedule-list'), ind = document.getElementById('break-indicator');
-            if (!fetchedRawSchedule || !list) return;
+            if (!list || !fetchedRawSchedule) return;
             list.innerHTML = ''; list.appendChild(ind);
             let items = currentScheduleMode === 4 ? fetchedRawSchedule.filter(it => !it.includes("5교시")) : fetchedRawSchedule;
             items.forEach(it => {
@@ -335,6 +357,7 @@
             if (breakIdx !== -1 && !anyActive) { ind.style.display = 'flex'; ind.style.top = (90 * breakIdx) + 'px'; } else { ind.style.display = 'none'; }
         }
 
+        // 4. 감정 카드 (KST 자정 기준 순차 순환)
         async function fetchEmotionData() {
             try {
                 const [dataRes, stateRes] = await Promise.all([ 
@@ -343,37 +366,37 @@
                 ]);
                 const emotions = await dataRes.json();
                 let stateRaw = await stateRes.json();
-                const todayStrKST = new Date().toLocaleDateString('ko-KR');
-                const todayMidnight = new Date(); todayMidnight.setHours(0,0,0,0);
+                const todayKST = new Date().toLocaleDateString('ko-KR');
+                const midnight = new Date(); midnight.setHours(0,0,0,0);
 
                 let state = safeParse(stateRaw);
                 if (state && state.data) state = safeParse(state.data);
 
                 if (!state || !state.startDate) {
-                    state = { startDate: todayStrKST };
-                    await fetch(`${GAS_URL}?sheet=학생용_바탕화면`, { 
-                        method: 'POST', 
-                        body: JSON.stringify({ data: JSON.stringify(state), range: "F1" }) 
-                    });
+                    state = { startDate: todayKST };
+                    await fetch(`${GAS_URL}?sheet=학생용_바탕화면`, { method: 'POST', body: JSON.stringify({ data: JSON.stringify(state), range: "F1" }) });
                 }
 
-                const start = new Date(state.startDate), diffDays = Math.floor(Math.abs(todayMidnight - start) / (1000 * 60 * 60 * 24));
-                const emotionIdx = diffDays % 80, selected = emotions[emotionIdx];
+                const start = new Date(state.startDate), diffDays = Math.floor(Math.abs(midnight - start) / (1000 * 60 * 60 * 24));
+                const emotionIdx = diffDays % (emotions.length || 80);
+                const selected = emotions[emotionIdx] || ["반가워", "오늘 하루도 힘내요!"];
+                
                 const wEl = document.getElementById('emotion-word'), dEl = document.getElementById('emotion-desc');
                 if(wEl && dEl) {
-                    wEl.textContent = selected[0] || "반가워"; dEl.textContent = selected[1] || "";
+                    wEl.textContent = selected[0]; dEl.textContent = selected[1];
                     setTimeout(() => {
                         let ws = 60; wEl.style.fontSize = ws + 'px'; while (wEl.scrollWidth > 350 && ws > 25) { ws -= 2; wEl.style.fontSize = ws + 'px'; }
                         let ds = 30; dEl.style.fontSize = ds + 'px'; while (dEl.scrollHeight > 85 && ds > 18) { ds -= 1; dEl.style.fontSize = ds + 'px'; }
                     }, 50);
                 }
-            } catch (e) { console.error("Emotion Load Error:", e); }
+            } catch (e) {}
         }
 
-        // 칠판
+        // 5. 칠판 기능
         window.onBlackboardInput = () => { clearTimeout(blackboardSaveTimeout); blackboardSaveTimeout = setTimeout(saveBlackboard, 1000); };
         async function saveBlackboard() {
-            const content = document.getElementById('blackboard-input').innerHTML; if (content === "[object Object]") return;
+            const content = document.getElementById('blackboard-input').innerHTML;
+            if (content === "[object Object]" || !content) return;
             try { await fetch(`${GAS_URL}?sheet=학생용_바탕화면`, { method: 'POST', body: JSON.stringify({ data: content, range: "E1" }) }); } catch (e) {}
         }
         window.loadBlackboard = async function() {
@@ -385,29 +408,40 @@
             } catch (e) {}
         };
 
-        // 초기화 시퀀스 제어
-        async function startApp() {
-            window.adjustScale();
-            updateClock(); setInterval(updateClock, 1000);
+        // 6. 앱 초기화 시퀀스
+        async function initDashboard() {
+            // 시계 즉시 시작 (데이터 로딩과 무관하게 작동 보장)
+            refreshClock();
+            setInterval(refreshClock, 1000);
             
-            // 1. 인증 먼저 수행
+            // 배율 조정
+            const adjust = () => {
+                const el = document.getElementById('app-scaler');
+                if(el) el.style.transform = `translate(-50%, -50%) scale(${Math.min(window.innerWidth / 1920, window.innerHeight / 1080)})`;
+            };
+            window.addEventListener('resize', adjust); adjust();
+
+            // Firebase 인증 및 개인 설정 로드
             try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (err) { console.error("Auth Init Error:", err); }
+                const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                if (token) await signInWithCustomToken(auth, token); else await signInAnonymously(auth);
+            } catch (err) {}
 
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     currentUser = user;
-                    // 2. 인증 완료 후 설정 로드
-                    await loadSchedulePreference(); 
+                    try {
+                        const snap = await getDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'scheduleConfig'));
+                        if (snap.exists()) {
+                            currentScheduleMode = snap.data().mode || 5;
+                            updateToggleButtonsUI();
+                            renderScheduleList();
+                        }
+                    } catch (e) {}
                 }
             });
 
-            // 3. 기타 비동기 데이터 병렬 로드 (인증과 무관)
+            // 기타 비동기 데이터 병렬 로드
             fetchWeather();
             fetchEmotionData();
             fetchSchedule();
@@ -434,7 +468,8 @@
                 const d = document.getElementById('cleanup-display'); d.innerHTML = "자리에 예쁘게 앉아<br>책을 펴요."; d.className = "finished-msg px-12"; 
                 document.getElementById('goal-target').style.display = 'none'; document.getElementById('cleanup-bar').style.width = '0%'; isTimerRunning = false; return;
             }
-            cleanupSeconds--; const m = Math.floor(cleanupSeconds / 60), s = cleanupSeconds % 60;
+            cleanupSeconds--;
+            const m = Math.floor(cleanupSeconds / 60), s = cleanupSeconds % 60;
             document.getElementById('cleanup-display').textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
             document.getElementById('cleanup-bar').style.width = `${(cleanupSeconds / 120) * 100}%`;
         }
@@ -452,33 +487,12 @@
             try {
                 const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=36.195&longitude=128.093&current_weather=true`);
                 const weatherData = await res.json();
-                const weatherMap = { 0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️", 61: "🌧️", 71: "❄️", 95: "⚡" };
-                document.getElementById('weather-icon').textContent = weatherMap[weatherData.current_weather.weathercode] || "🌤️";
+                const map = { 0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️", 61: "🌧️", 71: "❄️", 95: "⚡" };
+                document.getElementById('weather-icon').textContent = map[weatherData.current_weather.weathercode] || "🌤️";
             } catch(e) {}
         }
 
-        function updateClock() {
-            const now = new Date();
-            const todayISO = now.toISOString().split('T')[0];
-            if (lastCheckedDateISO !== todayISO) { lastCheckedDateISO = todayISO; fetchEmotionData(); fetchSchedule(); }
-            const h = now.getHours() % 12 || 12;
-            const displayDate = document.getElementById('display-date');
-            if(displayDate) displayDate.innerHTML = `<span class="text-cyan-600">${now.getMonth() + 1}</span>월 <span class="text-cyan-600">${now.getDate()}</span>일 <span class="text-cyan-600">${["일","월","화","수","목","금","토"][now.getDay()]}</span>요일`;
-            const displayTime = document.getElementById('display-time');
-            if(displayTime) displayTime.textContent = `${String(h).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-            const displayAMPM = document.getElementById('display-ampm');
-            if(displayAMPM) displayAMPM.textContent = now.getHours() >= 12 ? '오후' : '오전';
-            updateScheduleHighlight();
-        }
-
-        window.adjustScale = function() { 
-            const el = document.getElementById('app-scaler');
-            if(!el) return;
-            const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080); 
-            el.style.transform = `translate(-50%, -50%) scale(${scale})`; 
-        };
-
-        window.onload = startApp;
+        window.onload = initDashboard;
     </script>
 </body>
 </html>
