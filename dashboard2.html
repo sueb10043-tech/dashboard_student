@@ -42,13 +42,31 @@
         .schedule-item { display: grid; grid-template-columns: 220px 1fr; align-items: center; padding: 10px 15px 10px 21px; border-bottom: 1px solid #f3f4f6; font-size: 45px; font-weight: 500; height: 90px; box-sizing: border-box; position: relative; }
         .schedule-label { color: #0891b2; font-weight: 700; text-align: center; }
         .schedule-time { padding-left: 18px; font-family: 'Public Sans', sans-serif; font-weight: 400; color: #6b7280; white-space: nowrap; }
-        .spacing-1st .schedule-time { letter-spacing: -0.035em; }
-        .spacing-2nd .schedule-time { letter-spacing: -0.015em; }
         .active-period { background-color: #fff9db !important; }
         
-        #break-indicator { position: absolute; left: -14px; width: calc(100% + 14px); height: 5px; display: none; align-items: center; z-index: 50; }
-        #break-indicator::before { content: '▶'; position: absolute; left: 0; color: #f59e0b; font-size: 2rem; animation: arrowBounce 0.8s infinite; }
-        @keyframes arrowBounce { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(6px); } }
+        /* [수정] 쉬는 시간 표시기: 주황색 선과 화살표 */
+        #break-indicator { 
+            position: absolute; 
+            left: 0; 
+            width: 100%; 
+            height: 4px; 
+            background-color: #f59e0b; 
+            display: none; 
+            align-items: center; 
+            z-index: 50; 
+            pointer-events: none;
+        }
+        #break-indicator::before { 
+            content: '▶'; 
+            position: absolute; 
+            left: -18px; 
+            color: #f59e0b; 
+            font-size: 1.8rem; 
+            top: 50%;
+            transform: translateY(-50%);
+            animation: arrowBlink 0.8s infinite; 
+        }
+        @keyframes arrowBlink { 0%, 100% { opacity: 1; transform: translateY(-50%) translateX(0); } 50% { opacity: 0.7; transform: translateY(-50%) translateX(4px); } }
 
         .date-weather-window-width { width: 780px; height: 200px; flex-shrink: 0; } 
         .blank-window-width { width: 374px; height: 200px; flex-shrink: 0; } 
@@ -63,13 +81,32 @@
         .app-label { font-size: 9px; font-weight: 700; color: #64748b; }
         
         .modal-overlay { position: fixed; top: 0; left: 0; width: 1920px; height: 1080px; background: rgba(0,0,0,0.2); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; z-index: 1000; }
-        .modal-content { background: white; padding: 60px; border-radius: 40px; box-shadow: 0 30px 80px rgba(0,0,0,0.2); text-align: center; }
+        
+        /* [수정] 모달 내용: justify-center 제거하여 위치 고정 */
+        .modal-content { 
+            background: white; padding: 50px 60px; border-radius: 40px; 
+            box-shadow: 0 30px 80px rgba(0,0,0,0.2); text-align: center;
+            width: 900px; height: 600px; display: flex; flex-direction: column; align-items: center;
+        }
         #blackout-overlay { position: fixed; top: 0; left: 0; width: 1920px; height: 1080px; background: black; display: none; z-index: 2000; }
         
-        /* [수정] 종료 메시지 레이아웃 보정 */
-        .finished-msg { font-family: 'Gowun Dodum', sans-serif; font-weight: 700; color: #2563eb; font-size: 70px !important; line-height: 1.2; animation: fadeIn 0.5s ease-out; margin-bottom: 1rem !important; margin-top: -10px; }
+        /* [수정] 종료 메시지: 상태바와 40px 간격 유지 및 고정 위치 */
+        .finished-msg { 
+            font-family: 'Gowun Dodum', sans-serif; 
+            font-weight: 700; 
+            color: #2563eb; 
+            font-size: 70px !important; 
+            line-height: 1.2; 
+            animation: fadeIn 0.5s ease-out; 
+            margin-top: 10px; /* 고정된 상단 여백 */
+            margin-bottom: 40px !important; /* 상태바와의 40px 여백 */
+            height: 170px; /* 텍스트 영역 높이 고정 (1줄/2줄 상관없이 하단 위치 고정용) */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
+
         .btn-clear-all { margin-left: auto; color: #ef4444; cursor: pointer; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #fee2e2; font-weight: bold; font-size: 11px; line-height: 1; }
         #font-size-input { background: #f8fafc; border: none; outline: none; width: 50px; height: 22px; border-radius: 4px; text-align: center; font-size: 12px; font-weight: 800; color: #64748b; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; }
 
@@ -88,18 +125,22 @@
 
         <!-- 정리시간 타이머 모달 -->
         <div id="timer-modal" class="modal-overlay" onclick="closeAppModals(event)">
-            <div class="modal-content" style="width: 900px; height: 600px; display: flex; flex-direction: column; justify-content: center;" onclick="event.stopPropagation()">
-                <h2 id="timer-title" class="text-4xl font-bold mb-10 text-gray-400 uppercase tracking-widest">정리시간</h2>
-                <div id="cleanup-display" class="text-[180px] font-black text-blue-600 leading-none mb-12">02:00</div>
+            <div class="modal-content" onclick="event.stopPropagation()">
+                <h2 id="timer-title" class="text-4xl font-bold mb-8 text-gray-400 uppercase tracking-widest">정리시간</h2>
+                <!-- 타이머/결과 텍스트 영역 (높이 고정) -->
+                <div id="cleanup-display-area" style="height: 200px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+                    <div id="cleanup-display" class="text-[180px] font-black text-blue-600 leading-none">02:00</div>
+                </div>
                 
-                <div class="w-full bg-gray-100 h-10 rounded-full relative mb-16 overflow-visible px-4">
-                    <!-- [수정] 당근 위치: SVG 내부 여백을 고려하여 마진을 음수로 주어 왼쪽 끝에 완전 밀착 -->
-                    <div id="goal-target" class="absolute -left-3 -top-16 w-20 h-20">
+                <!-- 상태바 영역 (아래로 이동) -->
+                <div id="status-bar-area" class="w-full bg-gray-100 h-10 rounded-full relative mb-12 overflow-visible px-4">
+                    <!-- [수정] 당근: 내부 좌표 보정하여 왼쪽 끝에 완전 밀착 -->
+                    <div id="goal-target" class="absolute -left-4 -top-16 w-20 h-20">
                         <svg viewBox="0 0 100 100">
-                            <!-- 당근 본체 좌표 수정: M30 -> M5 로 변경하여 상자 왼쪽 끝에서부터 그림 -->
-                            <path d="M5 40 Q 25 20, 45 40 L 30 90 Q 25 95, 20 90 Z" fill="#fb923c" />
-                            <path d="M20 40 Q 25 10, 40 20 M 20 40 Q 15 5, 5 15 M 20 40 Q 10 15, -5 25" stroke="#4ade80" stroke-width="6" fill="none" stroke-linecap="round"/>
-                            <path d="M15 55 H 35 M 17 70 H 30 M 20 80 H 25" stroke="#ea580c" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+                            <!-- 당근 본체: M0에서 시작하여 왼쪽 여백 제거 -->
+                            <path d="M0 40 Q 20 20, 40 40 L 25 90 Q 20 95, 15 90 Z" fill="#fb923c" />
+                            <path d="M15 40 Q 20 10, 35 20 M 15 40 Q 10 5, 0 15 M 15 40 Q 5 15, -10 25" stroke="#4ade80" stroke-width="6" fill="none" stroke-linecap="round"/>
+                            <path d="M10 55 H 30 M 12 70 H 25 M 15 80 H 20" stroke="#ea580c" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
                         </svg>
                     </div>
                     <div id="cleanup-bar" class="h-full rounded-full bg-blue-500 transition-all duration-1000 relative" style="width: 100%;">
@@ -168,7 +209,10 @@
             </div>
             <div class="window-frame schedule-window-width" style="height: fit-content; overflow: visible;">
                 <div class="window-header flex justify-between items-center pr-4"><div class="flex gap-2"><div class="dot-gray"></div><div class="dot-gray"></div><div class="dot-gray"></div></div></div>
-                <div id="schedule-list" style="padding-bottom: 25px;"><div id="break-indicator"></div></div>
+                <div id="schedule-list" style="padding-bottom: 25px; position: relative;">
+                    <!-- 쉬는 시간 표시기 -->
+                    <div id="break-indicator"></div>
+                </div>
             </div>
         </main>
 
@@ -187,14 +231,15 @@
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbzoCgmF_cfpNOaImXQ7yY0UPOZ5eDuH1whp7NKTdEAvjPWGO6y5GzvafqySyy3Oul1l/exec";
         let cleanupInterval, cleanupSeconds = 120, isTimerRunning = false, blackboardSaveTimeout;
-        let lastCheckedDate = new Date().toLocaleDateString();
+        let lastCheckedDate = new Date().toLocaleDateString('ko-KR');
 
         function adjustScale() { const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080); document.getElementById('app-scaler').style.transform = `translate(-50%, -50%) scale(${scale})`; }
         window.addEventListener('resize', adjustScale);
 
         function updateClock() {
             const now = new Date();
-            if (lastCheckedDate !== now.toLocaleDateString()) { lastCheckedDate = now.toLocaleDateString(); fetchEmotionData(); }
+            const todayStr = now.toLocaleDateString('ko-KR');
+            if (lastCheckedDate !== todayStr) { lastCheckedDate = todayStr; fetchEmotionData(); }
             const h = now.getHours() % 12 || 12;
             document.getElementById('display-date').innerHTML = `<span class="text-cyan-600">${now.getMonth() + 1}</span>월 <span class="text-cyan-600">${now.getDate()}</span>일 <span class="text-cyan-600">${["일","월","화","수","목","금","토"][now.getDay()]}</span>요일`;
             document.getElementById('display-time').textContent = `${String(h).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -207,13 +252,14 @@
                 const [dataRes, stateRes] = await Promise.all([ fetch(`${GAS_URL}?sheet=학생용_바탕화면&range=B5:C84`), fetch(`${GAS_URL}?sheet=학생용_바탕화면&range=F1`) ]);
                 const emotions = await dataRes.json();
                 let stateRaw = await stateRes.json(), state;
-                const today = new Date().toISOString().split('T')[0];
+                const today = new Date().toLocaleDateString('ko-KR');
                 try { state = (typeof stateRaw === 'object' && stateRaw.data) ? JSON.parse(stateRaw.data) : JSON.parse(stateRaw); } catch(e) { state = null; }
 
                 if (!state || !state.sequence || state.currentIndex >= 80) {
                     const seq = Array.from({length: 80}, (_, i) => i);
                     for (let i = seq.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [seq[i], seq[j]] = [seq[j], seq[i]]; }
                     state = { sequence: seq, currentIndex: 0, lastDate: today };
+                    await fetch(`${GAS_URL}?sheet=학생용_바탕화면`, { method: 'POST', body: JSON.stringify({ data: JSON.stringify(state), range: "F1" }) });
                 } else if (state.lastDate !== today) {
                     state.currentIndex++; state.lastDate = today;
                     if (state.currentIndex >= 80) {
@@ -221,8 +267,8 @@
                         for (let i = seq.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [seq[i], seq[j]] = [seq[j], seq[i]]; }
                         state.sequence = seq; state.currentIndex = 0;
                     }
+                    await fetch(`${GAS_URL}?sheet=학생용_바탕화면`, { method: 'POST', body: JSON.stringify({ data: JSON.stringify(state), range: "F1" }) });
                 }
-                await fetch(`${GAS_URL}?sheet=학생용_바탕화면`, { method: 'POST', body: JSON.stringify({ data: JSON.stringify(state), range: "F1" }) });
                 const sel = emotions[state.sequence[state.currentIndex]];
                 const wEl = document.getElementById('emotion-word'), dEl = document.getElementById('emotion-desc');
                 wEl.textContent = sel[0] || "반가워"; dEl.textContent = sel[1] || "";
@@ -277,10 +323,8 @@
             if (cleanupSeconds <= 0) { 
                 clearInterval(cleanupInterval); document.getElementById('timer-title').style.visibility = 'hidden';
                 const d = document.getElementById('cleanup-display'); 
-                // 줄바꿈 및 디자인 수정
                 d.innerHTML = "자리에 예쁘게 앉아<br>책을 펴요."; 
                 d.className = "finished-msg px-12"; 
-                // 당근 제거 (토끼가 먹은 연출)
                 document.getElementById('goal-target').style.display = 'none';
                 document.getElementById('cleanup-bar').style.width = '0%'; isTimerRunning = false; return;
             }
@@ -291,7 +335,7 @@
 
         function resetCleanupTimer() {
             clearInterval(cleanupInterval); cleanupSeconds = 120; isTimerRunning = false; document.getElementById('timer-title').style.visibility = 'visible';
-            const d = document.getElementById('cleanup-display'); d.textContent = "02:00"; d.className = "text-[180px] font-black text-blue-600 leading-none mb-12";
+            const d = document.getElementById('cleanup-display'); d.textContent = "02:00"; d.className = "text-[180px] font-black text-blue-600 leading-none";
             document.getElementById('cleanup-bar').style.width = '100%'; 
             document.getElementById('goal-target').style.display = 'block'; 
             document.getElementById('ctrl-icon').innerHTML = '<path d="M8 5v14l11-7z"/>';
@@ -306,7 +350,6 @@
             items.forEach((item, idx) => {
                 const txt = item.querySelector('.schedule-time')?.textContent;
                 if (!txt) return;
-                // [오류 수정] text -> txt 로 수정
                 const match = txt.match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
                 if (match) {
                     let sH = parseInt(match[1]); if (sH < 8) sH += 12; const sM = sH * 60 + parseInt(match[2]);
@@ -324,7 +367,10 @@
                     }
                 }
             });
-            if (breakIdx !== -1 && !anyActive) { ind.style.display = 'flex'; ind.style.top = (90 * breakIdx) + 'px'; } else { ind.style.display = 'none'; }
+            if (breakIdx !== -1 && !anyActive) { 
+                ind.style.display = 'flex'; 
+                ind.style.top = (90 * breakIdx) + 'px'; 
+            } else { ind.style.display = 'none'; }
         }
 
         async function fetchSchedule() {
@@ -346,8 +392,17 @@
             } catch (e) {}
         }
 
-        function openApp(id) { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); document.getElementById(`${id}-modal`).style.display = 'flex'; }
-        function closeAppModals(e) { if (e.target.classList.contains('modal-overlay')) e.target.style.display = 'none'; }
+        function openApp(id) { 
+            document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); 
+            document.getElementById(`${id}-modal`).style.display = 'flex'; 
+        }
+
+        function closeAppModals(e) { 
+            if (e.target.classList.contains('modal-overlay')) {
+                e.target.style.display = 'none';
+                if (e.target.id === 'timer-modal') resetCleanupTimer();
+            } 
+        }
         function toggleBlackout() { const el = document.getElementById('blackout-overlay'); el.style.display = el.style.display === 'block' ? 'none' : 'block'; }
 
         window.onload = () => { adjustScale(); updateClock(); setInterval(updateClock, 1000); fetchWeather(); fetchEmotionData(); fetchSchedule(); loadBlackboard(); };
