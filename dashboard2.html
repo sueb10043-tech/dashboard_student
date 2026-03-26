@@ -58,10 +58,19 @@
         }
         @keyframes arrowBlink { 0%, 100% { opacity: 1; transform: translateY(-50%) translateX(0); } 50% { opacity: 0.7; transform: translateY(-50%) translateX(4px); } }
 
+        /* [수정] 눈에 띄지 않는 스텔스 버튼 스타일 */
+        .period-toggle-btn { 
+            width: 28px; height: 20px; display: flex; align-items: center; justify-content: center; 
+            border-radius: 4px; font-size: 11px; font-weight: 900; cursor: pointer; 
+            background: transparent; color: #6b7280; opacity: 0.1; /* 평소 10% 투명도 */
+            transition: all 0.3s ease;
+        }
+        .period-toggle-btn:hover { opacity: 0.5; background: rgba(0,0,0,0.05); }
+        .period-toggle-btn.active { opacity: 0.8; color: #0891b2; background: rgba(8, 145, 178, 0.05); }
+
         .date-weather-window-width { width: 780px; height: 200px; flex-shrink: 0; } 
         .blank-window-width { width: 374px; height: 200px; flex-shrink: 0; } 
         .clock-window-width { width: 550px; height: 200px; flex-shrink: 0; }
-        
         #display-time { font-family: 'Public Sans', sans-serif; letter-spacing: -0.02em; }
 
         .dock-container { position: absolute; bottom: 70px; left: 0; right: 0; display: flex; justify-content: center; z-index: 100; pointer-events: none; }
@@ -90,7 +99,7 @@
             line-height: 1.2; animation: fadeIn 0.5s ease-out; margin-top: 10px; margin-bottom: 40px !important; 
             height: 170px; display: flex; align-items: center; justify-content: center;
         }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; opacity: 1; transform: translateY(0); } }
 
         .btn-clear-all { 
             margin-left: auto; cursor: pointer; width: 24px; height: 24px; display: flex; align-items: center; 
@@ -123,7 +132,6 @@
                 <div id="cleanup-display-area" style="height: 200px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
                     <div id="cleanup-display" class="text-[180px] font-black text-blue-600 leading-none">02:00</div>
                 </div>
-                
                 <div id="status-bar-area" class="w-full bg-gray-100 h-10 rounded-full relative mb-12 overflow-visible">
                     <div id="goal-target" class="absolute -left-8 -top-16 w-20 h-20">
                         <svg viewBox="0 0 100 100">
@@ -136,7 +144,6 @@
                         <span id="runner-icon" class="absolute -right-10 -top-16 text-7xl">🐰</span>
                     </div>
                 </div>
-
                 <div class="flex gap-12 justify-center">
                     <button id="timer-ctrl-btn" onclick="toggleCleanupTimer()" class="w-24 h-24 rounded-3xl bg-blue-500 text-white flex items-center justify-center shadow-xl"><svg id="ctrl-icon" width="40" height="40" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
                     <button onclick="resetCleanupTimer()" class="w-24 h-24 rounded-3xl bg-gray-100 text-gray-500 flex items-center justify-center shadow-md"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
@@ -187,8 +194,15 @@
                 </div>
                 <div id="blackboard-input" contenteditable="true" spellcheck="false" class="flex-grow bg-white" style="color: #333; font-size: 70px;" oninput="onBlackboardInput()"></div>
             </div>
+            
             <div class="window-frame schedule-window-width" style="height: fit-content; overflow: visible;">
-                <div class="window-header flex justify-between items-center pr-4"><div class="flex gap-2"><div class="dot-gray"></div><div class="dot-gray"></div><div class="dot-gray"></div></div></div>
+                <div class="window-header flex justify-between items-center pr-3">
+                    <div class="flex gap-2"><div class="dot-gray"></div><div class="dot-gray"></div><div class="dot-gray"></div></div>
+                    <div class="flex gap-1.5 items-center">
+                        <div id="btn-4per" class="period-toggle-btn" onclick="toggleScheduleMode(4)">4</div>
+                        <div id="btn-5per" class="period-toggle-btn" onclick="toggleScheduleMode(5)">5</div>
+                    </div>
+                </div>
                 <div id="schedule-list" style="padding-bottom: 25px; position: relative;"><div id="break-indicator"></div></div>
             </div>
         </main>
@@ -205,21 +219,58 @@
         </div>
     </div>
 
-    <script>
+    <!-- Firebase SDK 로드 -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
         const GAS_URL = "https://script.google.com/macros/s/AKfycbzoCgmF_cfpNOaImXQ7yY0UPOZ5eDuH1whp7NKTdEAvjPWGO6y5GzvafqySyy3Oul1l/exec";
-        let cleanupInterval, cleanupSeconds = 120, isTimerRunning = false, blackboardSaveTimeout;
+        
+        // Firebase 초기화 (전역 노출 방지 위해 모듈 스코프 유지)
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        let currentUser = null, isTimerRunning = false, cleanupInterval, cleanupSeconds = 120, blackboardSaveTimeout;
         let lastCheckedDate = new Date().toLocaleDateString('ko-KR');
+        let currentScheduleMode = 5, fetchedRawSchedule = null;
 
-        function adjustScale() { const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080); document.getElementById('app-scaler').style.transform = `translate(-50%, -50%) scale(${scale})`; }
-        window.addEventListener('resize', adjustScale);
+        // [핵심] Firestore 설정 저장/로드
+        async function saveSchedulePreference(mode) {
+            if (!currentUser) return;
+            try {
+                const ref = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'scheduleConfig');
+                await setDoc(ref, { mode: mode }, { merge: true });
+            } catch (e) {}
+        }
 
-        function updateClock() {
-            const now = new Date(); 
-            const todayStr = now.toLocaleDateString('ko-KR');
-            if (lastCheckedDate !== todayStr) { 
-                lastCheckedDate = todayStr; 
-                fetchEmotionData();
+        async function loadSchedulePreference() {
+            if (!currentUser) return;
+            try {
+                const ref = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'scheduleConfig');
+                const snap = await getDoc(ref);
+                if (snap.exists()) {
+                    currentScheduleMode = snap.data().mode || 5;
+                    updateToggleButtons();
+                    renderSchedule();
+                }
+            } catch (e) {
+                currentScheduleMode = 5;
+                updateToggleButtons();
             }
+        }
+
+        // 초기화 및 이벤트 연결
+        window.adjustScale = function() { const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080); document.getElementById('app-scaler').style.transform = `translate(-50%, -50%) scale(${scale})`; };
+        window.addEventListener('resize', window.adjustScale);
+
+        // 요일/시간 체크
+        function updateClock() {
+            const now = new Date(); const todayStr = now.toLocaleDateString('ko-KR');
+            if (lastCheckedDate !== todayStr) { lastCheckedDate = todayStr; fetchEmotionData(); fetchSchedule(); }
             const h = now.getHours() % 12 || 12;
             document.getElementById('display-date').innerHTML = `<span class="text-cyan-600">${now.getMonth() + 1}</span>월 <span class="text-cyan-600">${now.getDate()}</span>일 <span class="text-cyan-600">${["일","월","화","수","목","금","토"][now.getDay()]}</span>요일`;
             document.getElementById('display-time').textContent = `${String(h).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -229,93 +280,64 @@
 
         async function fetchEmotionData() {
             try {
-                const [dataRes, stateRes] = await Promise.all([ 
-                    fetch(`${GAS_URL}?sheet=학생용_바탕화면&range=B5:C84`), 
-                    fetch(`${GAS_URL}?sheet=학생용_바탕화면&range=F1`) 
-                ]);
+                const [dataRes, stateRes] = await Promise.all([ fetch(`${GAS_URL}?sheet=학생용_바탕화면&range=B5:C84`), fetch(`${GAS_URL}?sheet=학생용_바탕화면&range=F1`) ]);
                 const emotions = await dataRes.json();
                 let stateRaw = await stateRes.json(), state;
                 const today = new Date(); today.setHours(0,0,0,0);
-                const todayStr = today.toLocaleDateString('ko-KR');
-
                 try { state = (typeof stateRaw === 'object' && stateRaw.data) ? JSON.parse(stateRaw.data) : JSON.parse(stateRaw); } catch(e) { state = null; }
-
                 if (!state || !state.startDate) {
-                    state = { startDate: todayStr };
+                    state = { startDate: today.toLocaleDateString('ko-KR') };
                     await fetch(`${GAS_URL}?sheet=학생용_바탕화면`, { method: 'POST', body: JSON.stringify({ data: JSON.stringify(state), range: "F1" }) });
                 }
-
                 const start = new Date(state.startDate), diffTime = Math.abs(today - start), diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
                 const emotionIdx = diffDays % 80, selected = emotions[emotionIdx];
                 const wEl = document.getElementById('emotion-word'), dEl = document.getElementById('emotion-desc');
-                
                 wEl.textContent = selected[0] || "반가워"; dEl.textContent = selected[1] || "";
-                
                 setTimeout(() => {
                     let ws = 60; wEl.style.fontSize = ws + 'px'; while (wEl.scrollWidth > 350 && ws > 25) { ws -= 2; wEl.style.fontSize = ws + 'px'; }
                     let ds = 30; dEl.style.fontSize = ds + 'px'; while (dEl.scrollHeight > 85 && ds > 18) { ds -= 1; dEl.style.fontSize = ds + 'px'; }
                 }, 50);
-            } catch (e) { }
-        }
-
-        async function fetchWeather() {
-            try {
-                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=36.195&longitude=128.093&current_weather=true`);
-                const data = await res.json(), code = data.current_weather.weathercode;
-                const map = { 0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️", 61: "🌧️", 71: "❄️", 95: "⚡" };
-                document.getElementById('weather-icon').textContent = map[code] || "🌤️";
             } catch (e) {}
         }
 
-        async function loadBlackboard() {
+        // 시정표 로직
+        window.toggleScheduleMode = function(mode) {
+            currentScheduleMode = mode;
+            updateToggleButtons();
+            renderSchedule();
+            saveSchedulePreference(mode); // 선택 즉시 저장
+        }
+
+        function updateToggleButtons() {
+            document.getElementById('btn-4per').classList.toggle('active', currentScheduleMode === 4);
+            document.getElementById('btn-5per').classList.toggle('active', currentScheduleMode === 5);
+        }
+
+        async function fetchSchedule() {
+            const dayMap = ["일","월","화","수","목","금","토"];
+            const today = dayMap[new Date().getDay()];
             try {
-                const res = await fetch(`${GAS_URL}?sheet=학생용_바탕화면&range=E1`);
-                const raw = await res.json();
-                const content = (typeof raw === 'object' && raw !== null && raw.data) ? raw.data : raw;
-                if (content && typeof content === 'string' && content !== "{}" && content !== "[object Object]") document.getElementById('blackboard-input').innerHTML = content;
-            } catch (e) {}
-        }
-
-        function onBlackboardInput() { clearTimeout(blackboardSaveTimeout); blackboardSaveTimeout = setTimeout(saveBlackboard, 1000); }
-        async function saveBlackboard() {
-            const content = document.getElementById('blackboard-input').innerHTML;
-            if (content === "[object Object]") return;
-            try { await fetch(`${GAS_URL}?sheet=학생용_바탕화면`, { method: 'POST', body: JSON.stringify({ data: content, range: "E1" }) }); } catch (e) {}
-        }
-
-        function showBlackboardConfirm() { document.getElementById('blackboard-confirm').style.display = 'flex'; }
-        function hideBlackboardConfirm() { document.getElementById('blackboard-confirm').style.display = 'none'; }
-        function executeClear() { document.getElementById('blackboard-input').innerHTML = ""; saveBlackboard(); hideBlackboardConfirm(); }
-        function setChalkColor(c) { document.getElementById('blackboard-input').style.color = c; saveBlackboard(); }
-        function updateChalkStyle() { 
-            let size = document.getElementById('font-size-input').value; if(!isNaN(size) && size !== "") size = size + 'px';
-            document.getElementById('blackboard-input').style.fontSize = size; saveBlackboard();
-        }
-
-        function toggleCleanupTimer() {
-            const icon = document.getElementById('ctrl-icon');
-            if (isTimerRunning) { clearInterval(cleanupInterval); icon.innerHTML = '<path d="M8 5v14l11-7z"/>'; isTimerRunning = false;
-            } else { cleanupInterval = setInterval(updateCleanupTimer, 1000); icon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; isTimerRunning = true; }
-        }
-
-        function updateCleanupTimer() {
-            if (cleanupSeconds <= 0) { 
-                clearInterval(cleanupInterval); document.getElementById('timer-title').style.visibility = 'hidden';
-                const d = document.getElementById('cleanup-display'); d.innerHTML = "자리에 예쁘게 앉아<br>책을 펴요."; d.className = "finished-msg px-12"; 
-                document.getElementById('goal-target').style.display = 'none'; document.getElementById('cleanup-bar').style.width = '0%'; isTimerRunning = false; return;
+                const res = await fetch(`${GAS_URL}?sheet=학생용_바탕화면`);
+                const data = await res.json();
+                fetchedRawSchedule = (data && Array.isArray(data[today])) ? data[today] : ["1교시 09:00-09:40", "2교시 09:50-10:30", "3교시 10:40-11:20", "4교시 11:30-12:10", "점심시간 12:10-13:10", "5교시 13:10-13:50"];
+            } catch (e) {
+                fetchedRawSchedule = ["1교시 09:00-09:40", "2교시 09:50-10:30", "3교시 10:40-11:20", "4교시 11:30-12:10", "점심시간 12:10-13:10", "5교시 13:10-13:50"];
             }
-            cleanupSeconds--; const m = Math.floor(cleanupSeconds / 60), s = cleanupSeconds % 60;
-            document.getElementById('cleanup-display').textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-            document.getElementById('cleanup-bar').style.width = `${(cleanupSeconds / 120) * 100}%`;
+            renderSchedule();
         }
 
-        function resetCleanupTimer() {
-            clearInterval(cleanupInterval); cleanupSeconds = 120; isTimerRunning = false; document.getElementById('timer-title').style.visibility = 'visible';
-            const d = document.getElementById('cleanup-display'); d.textContent = "02:00"; d.className = "text-[180px] font-black text-blue-600 leading-none";
-            document.getElementById('cleanup-bar').style.width = '100%'; document.getElementById('goal-target').style.display = 'block'; document.getElementById('ctrl-icon').innerHTML = '<path d="M8 5v14l11-7z"/>';
+        function renderSchedule() {
+            const list = document.getElementById('schedule-list'), ind = document.getElementById('break-indicator');
+            if (!fetchedRawSchedule) return;
+            list.innerHTML = ''; list.appendChild(ind);
+            let items = currentScheduleMode === 4 ? fetchedRawSchedule.filter(it => !it.includes("5교시")) : fetchedRawSchedule;
+            items.forEach(it => {
+                const div = document.createElement('div'); div.className = 'schedule-item';
+                const parts = it.split(' ');
+                if (parts.length >= 2) { div.innerHTML = `<span class="schedule-label">${parts[0]}</span><span class="schedule-time">${parts[1]}</span>`; list.appendChild(div); }
+            });
+            updateScheduleHighlight();
         }
-
-        function openPopup(url, w, h, winName) { const l = (screen.width - w) / 2, t = (screen.height - h) / 2; window.open(url, winName, `width=${w},height=${h},left=${l},top=${t},popup=yes,resizable=yes,scrollbars=yes,status=no,location=no`); }
 
         function updateScheduleHighlight() {
             const now = new Date(), curMin = now.getHours() * 60 + now.getMinutes();
@@ -344,46 +366,91 @@
             if (breakIdx !== -1 && !anyActive) { ind.style.display = 'flex'; ind.style.top = (90 * breakIdx) + 'px'; } else { ind.style.display = 'none'; }
         }
 
-        /* [핵심 수정] 시정표 로딩 시 예외처리 강화 (기본값 보장 로직) */
-        async function fetchSchedule() {
-            const defaultSchedule = ["1교시 09:00-09:40", "2교시 09:50-10:30", "3교시 10:40-11:20", "4교시 11:30-12:10", "점심시간 12:10-13:10", "5교시 13:10-13:50"];
-            const list = document.getElementById('schedule-list'), ind = document.getElementById('break-indicator');
-            const dayMap = ["일","월","화","수","목","금","토"];
-            const today = dayMap[new Date().getDay()];
-            
-            let items = defaultSchedule; // 일단 기본값으로 시작
-
+        // 칠판 및 기타 공통 함수들 (전역 노출 필요)
+        window.onBlackboardInput = function() { clearTimeout(blackboardSaveTimeout); blackboardSaveTimeout = setTimeout(saveBlackboard, 1000); };
+        async function saveBlackboard() {
+            const content = document.getElementById('blackboard-input').innerHTML; if (content === "[object Object]") return;
+            try { await fetch(`${GAS_URL}?sheet=학생용_바탕화면`, { method: 'POST', body: JSON.stringify({ data: content, range: "E1" }) }); } catch (e) {}
+        }
+        window.loadBlackboard = async function() {
             try {
-                const res = await fetch(`${GAS_URL}?sheet=학생용_바탕화면`);
-                const data = await res.json();
-                
-                // 데이터가 유효하고 오늘 요일의 데이터가 있을 경우에만 업데이트
-                if (data && typeof data === 'object' && Array.isArray(data[today])) {
-                    items = data[today];
-                }
-            } catch (e) {
-                // 에러 발생 시(서버 응답 없음 등) 조용히 기본 스케줄 사용
-            }
+                const res = await fetch(`${GAS_URL}?sheet=학생용_바탕화면&range=E1`);
+                const raw = await res.json(), content = raw.data || raw;
+                if (content && typeof content === 'string' && content !== "{}" && content !== "[object Object]") document.getElementById('blackboard-input').innerHTML = content;
+            } catch (e) {}
+        };
+        window.showBlackboardConfirm = () => document.getElementById('blackboard-confirm').style.display = 'flex';
+        window.hideBlackboardConfirm = () => document.getElementById('blackboard-confirm').style.display = 'none';
+        window.executeClear = () => { document.getElementById('blackboard-input').innerHTML = ""; saveBlackboard(); window.hideBlackboardConfirm(); };
+        window.setChalkColor = (c) => { document.getElementById('blackboard-input').style.color = c; saveBlackboard(); };
+        window.updateChalkStyle = () => { 
+            let size = document.getElementById('font-size-input').value; if(!isNaN(size) && size !== "") size = size + 'px';
+            document.getElementById('blackboard-input').style.fontSize = size; saveBlackboard();
+        };
 
-            // 화면 렌더링
-            list.innerHTML = '';
-            list.appendChild(ind);
-            items.forEach(it => {
-                const div = document.createElement('div'); div.className = 'schedule-item';
-                const parts = it.split(' ');
-                if (parts.length >= 2) {
-                    div.innerHTML = `<span class="schedule-label">${parts[0]}</span><span class="schedule-time">${parts[1]}</span>`;
-                    list.appendChild(div);
+        // 타이머 로직
+        window.toggleCleanupTimer = function() {
+            const icon = document.getElementById('ctrl-icon');
+            if (isTimerRunning) { clearInterval(cleanupInterval); icon.innerHTML = '<path d="M8 5v14l11-7z"/>'; isTimerRunning = false;
+            } else { cleanupInterval = setInterval(updateCleanupTimer, 1000); icon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; isTimerRunning = true; }
+        };
+        function updateCleanupTimer() {
+            if (cleanupSeconds <= 0) { 
+                clearInterval(cleanupInterval); document.getElementById('timer-title').style.visibility = 'hidden';
+                const d = document.getElementById('cleanup-display'); d.innerHTML = "자리에 예쁘게 앉아<br>책을 펴요."; d.className = "finished-msg px-12"; 
+                document.getElementById('goal-target').style.display = 'none'; document.getElementById('cleanup-bar').style.width = '0%'; isTimerRunning = false; return;
+            }
+            cleanupSeconds--; const m = Math.floor(cleanupSeconds / 60), s = cleanupSeconds % 60;
+            document.getElementById('cleanup-display').textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            document.getElementById('cleanup-bar').style.width = `${(cleanupSeconds / 120) * 100}%`;
+        }
+        window.resetCleanupTimer = function() {
+            clearInterval(cleanupInterval); cleanupSeconds = 120; isTimerRunning = false; document.getElementById('timer-title').style.visibility = 'visible';
+            const d = document.getElementById('cleanup-display'); d.textContent = "02:00"; d.className = "text-[180px] font-black text-blue-600 leading-none";
+            document.getElementById('cleanup-bar').style.width = '100%'; document.getElementById('goal-target').style.display = 'block'; document.getElementById('ctrl-icon').innerHTML = '<path d="M8 5v14l11-7z"/>';
+        };
+
+        // 앱 제어
+        window.openApp = (id) => { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); document.getElementById(`${id}-modal`).style.display = 'flex'; };
+        window.closeAppModals = (e) => { if (e.target.classList.contains('modal-overlay')) { e.target.style.display = 'none'; if (e.target.id === 'timer-modal') window.resetCleanupTimer(); } };
+        window.toggleBlackout = () => { const el = document.getElementById('blackout-overlay'); el.style.display = el.style.display === 'block' ? 'none' : 'block'; };
+        window.openPopup = (url, w, h, winName) => { const l = (screen.width - w) / 2, t = (screen.height - h) / 2; window.open(url, winName, `width=${w},height=${h},left=${l},top=${t},popup=yes,resizable=yes,scrollbars=yes,status=no,location=no`); };
+
+        // Firebase 시작 및 앱 초기 로드
+        async function startApp() {
+            window.adjustScale();
+            updateClock(); setInterval(updateClock, 1000);
+            
+            // Firebase 인증
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (err) {}
+
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    currentUser = user;
+                    await loadSchedulePreference(); // 저장된 시정표 모드 불러오기
                 }
             });
-            updateScheduleHighlight();
+
+            // 기타 정적 데이터 로드
+            try {
+                const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=36.195&longitude=128.093&current_weather=true`);
+                const weatherData = await weatherRes.json();
+                const weatherMap = { 0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️", 61: "🌧️", 71: "❄️", 95: "⚡" };
+                document.getElementById('weather-icon').textContent = weatherMap[weatherData.current_weather.weathercode] || "🌤️";
+            } catch(e) {}
+            
+            fetchEmotionData();
+            fetchSchedule();
+            window.loadBlackboard();
         }
 
-        function openApp(id) { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); document.getElementById(`${id}-modal`).style.display = 'flex'; }
-        function closeAppModals(e) { if (e.target.classList.contains('modal-overlay')) { e.target.style.display = 'none'; if (e.target.id === 'timer-modal') resetCleanupTimer(); } }
-        function toggleBlackout() { const el = document.getElementById('blackout-overlay'); el.style.display = el.style.display === 'block' ? 'none' : 'block'; }
-
-        window.onload = () => { adjustScale(); updateClock(); setInterval(updateClock, 1000); fetchWeather(); fetchEmotionData(); fetchSchedule(); loadBlackboard(); };
+        window.onload = startApp;
     </script>
 </body>
 </html>
