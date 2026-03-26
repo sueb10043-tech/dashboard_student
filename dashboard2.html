@@ -13,7 +13,6 @@
         * { -webkit-font-smoothing: subpixel-antialiased; text-rendering: geometricPrecision; box-sizing: border-box; }
         body { font-family: 'Gowun Dodum', 'Noto Sans KR', sans-serif; margin: 0; padding: 0; width: 100vw; height: 100vh; background-color: #d8eeff; overflow: hidden; display: flex; align-items: center; justify-content: center; }
         
-        /* [수정] 상단 여백을 46px에서 40px로 조정 */
         #app-scaler { 
             width: 1920px; height: 1080px; flex-shrink: 0; position: absolute; left: 50%; top: 50%; 
             transform: translate(-50%, -50%); transform-origin: center center; 
@@ -41,47 +40,29 @@
 
         .schedule-window-width { width: 450px; flex-shrink: 0; }
         .schedule-item { 
-            display: grid; 
-            grid-template-columns: 180px 1fr; 
-            align-items: center; 
-            padding: 10px 15px 10px 13px; 
-            border-bottom: 1px solid #f3f4f6; 
-            font-size: 35px; 
-            font-weight: 500; 
-            height: 90px; 
-            box-sizing: border-box; 
-            position: relative; 
+            display: grid; grid-template-columns: 180px 1fr; align-items: center; 
+            padding: 10px 15px 10px 13px; border-bottom: 1px solid #f3f4f6; 
+            font-size: 35px; font-weight: 500; height: 90px; box-sizing: border-box; position: relative; 
         }
         .schedule-label { color: #0891b2; font-weight: 700; text-align: center; }
         .schedule-time { padding-left: 14px; font-family: 'Public Sans', sans-serif; font-weight: 400; color: #6b7280; white-space: nowrap; }
         .active-period { background-color: #fff9db !important; }
         
         #break-indicator { 
-            position: absolute; 
-            left: 0; 
-            width: 100%; 
-            height: 4px; 
-            background-color: #f59e0b; 
-            display: none; 
-            align-items: center; 
-            z-index: 50; 
-            pointer-events: none;
+            position: absolute; left: 0; width: 100%; height: 4px; 
+            background-color: #f59e0b; display: none; align-items: center; z-index: 50; pointer-events: none;
         }
         #break-indicator::before { 
-            content: '▶'; 
-            position: absolute; 
-            left: -18px; 
-            color: #f59e0b; 
-            font-size: 1.8rem; 
-            top: 50%;
-            transform: translateY(-50%);
-            animation: arrowBlink 0.8s infinite; 
+            content: '▶'; position: absolute; left: -18px; color: #f59e0b; 
+            font-size: 1.8rem; top: 50%; transform: translateY(-50%); animation: arrowBlink 0.8s infinite; 
         }
         @keyframes arrowBlink { 0%, 100% { opacity: 1; transform: translateY(-50%) translateX(0); } 50% { opacity: 0.7; transform: translateY(-50%) translateX(4px); } }
 
         .date-weather-window-width { width: 780px; height: 200px; flex-shrink: 0; } 
         .blank-window-width { width: 374px; height: 200px; flex-shrink: 0; } 
         .clock-window-width { width: 550px; height: 200px; flex-shrink: 0; }
+        
+        /* [복구] 시계 폰트 스타일 전용 설정 */
         #display-time { font-family: 'Public Sans', sans-serif; letter-spacing: -0.02em; }
 
         .dock-container { position: absolute; bottom: 70px; left: 0; right: 0; display: flex; justify-content: center; z-index: 100; pointer-events: none; }
@@ -99,36 +80,22 @@
         }
 
         #blackout-overlay { position: fixed; top: 0; left: 0; width: 1920px; height: 1080px; background: black; display: none; z-index: 2000; }
-        .blackout-unlock-btn { position: absolute; bottom: 110px; right: 40px; opacity: 0.2; cursor: pointer; transition: opacity 0.3s; display: flex; align-items: center; justify-content: center; }
+        .blackout-unlock-btn { 
+            position: absolute; bottom: 140px; right: 40px; opacity: 0.2; cursor: pointer; 
+            transition: opacity 0.3s; display: flex; align-items: center; justify-content: center; 
+        }
         .blackout-unlock-btn:hover { opacity: 0.6; }
 
         .finished-msg { 
-            font-family: 'Gowun Dodum', sans-serif; 
-            font-weight: 700; 
-            color: #2563eb; 
-            font-size: 70px !important; 
-            line-height: 1.2; 
-            animation: fadeIn 0.5s ease-out; 
-            margin-top: 10px;
-            margin-bottom: 40px !important; 
-            height: 170px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            font-family: 'Gowun Dodum', sans-serif; font-weight: 700; color: #2563eb; font-size: 70px !important; 
+            line-height: 1.2; animation: fadeIn 0.5s ease-out; margin-top: 10px; margin-bottom: 40px !important; 
+            height: 170px; display: flex; align-items: center; justify-content: center;
         }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         .btn-clear-all { 
-            margin-left: auto; 
-            cursor: pointer; 
-            width: 24px; 
-            height: 24px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            border-radius: 50%; 
-            background: #fee2e2; 
-            transition: background 0.2s;
+            margin-left: auto; cursor: pointer; width: 24px; height: 24px; display: flex; align-items: center; 
+            justify-content: center; border-radius: 50%; background: #fee2e2; transition: background 0.2s;
         }
         .btn-clear-all svg { width: 12px; height: 12px; stroke: #ef4444; stroke-width: 3.5; stroke-linecap: round; }
 
@@ -147,9 +114,7 @@
     <div id="app-scaler">
         <div id="blackout-overlay">
             <div class="blackout-unlock-btn" onclick="toggleBlackout()">
-                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 2v10M18.4 6.6a9 9 0 1 1-12.77.04"/>
-                </svg>
+                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v10M18.4 6.6a9 9 0 1 1-12.77.04"/></svg>
             </div>
         </div>
 
@@ -160,12 +125,12 @@
                     <div id="cleanup-display" class="text-[180px] font-black text-blue-600 leading-none">02:00</div>
                 </div>
                 
-                <div id="status-bar-area" class="w-full bg-gray-100 h-10 rounded-full relative mb-12 overflow-visible px-4">
-                    <div id="goal-target" class="absolute -left-4 -top-16 w-20 h-20">
+                <div id="status-bar-area" class="w-full bg-gray-100 h-10 rounded-full relative mb-12 overflow-visible">
+                    <div id="goal-target" class="absolute -left-8 -top-16 w-20 h-20">
                         <svg viewBox="0 0 100 100">
-                            <path d="M0 40 Q 20 20, 40 40 L 25 90 Q 20 95, 15 90 Z" fill="#fb923c" />
-                            <path d="M15 40 Q 20 10, 35 20 M 15 40 Q 10 5, 0 15 M 15 40 Q 5 15, -10 25" stroke="#4ade80" stroke-width="6" fill="none" stroke-linecap="round"/>
-                            <path d="M10 55 H 30 M 12 70 H 25 M 15 80 H 20" stroke="#ea580c" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+                            <path d="M30 40 Q 50 20, 70 40 L 55 90 Q 50 95, 45 90 Z" fill="#fb923c" />
+                            <path d="M50 40 Q 55 10, 70 20 M 50 40 Q 45 5, 30 15 M 50 40 Q 40 15, 25 25" stroke="#4ade80" stroke-width="6" fill="none" stroke-linecap="round"/>
+                            <path d="M40 55 H 60 M 42 70 H 55 M 45 80 H 50" stroke="#ea580c" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
                         </svg>
                     </div>
                     <div id="cleanup-bar" class="h-full rounded-full bg-blue-500 transition-all duration-1000 relative" style="width: 100%;">
@@ -183,10 +148,7 @@
         <header class="flex gap-12 items-start mb-[50px]">
             <div class="window-frame date-weather-window-width">
                 <div class="window-header"><div class="dot-gray"></div><div class="dot-gray"></div><div class="dot-gray"></div></div>
-                <div class="flex-grow flex items-center justify-center px-10">
-                    <div id="display-date" class="text-[80px] font-bold whitespace-nowrap"></div>
-                    <span id="weather-icon" class="text-[90px] ml-5">🌤️</span>
-                </div>
+                <div class="flex-grow flex items-center justify-center px-10"><div id="display-date" class="text-[80px] font-bold whitespace-nowrap"></div><span id="weather-icon" class="text-[90px] ml-5">🌤️</span></div>
             </div>
             <div class="window-frame blank-window-width">
                 <div class="window-header"><div class="dot-gray"></div><div class="dot-gray"></div><div class="dot-gray"></div></div>
@@ -202,10 +164,7 @@
             <div class="window-frame clock-window-width">
                 <div class="window-header"><div class="dot-gray"></div><div class="dot-gray"></div><div class="dot-gray"></div></div>
                 <div class="flex-grow flex items-center justify-center relative">
-                    <div class="relative flex items-center justify-center">
-                        <div id="display-time" class="text-[125px] font-black leading-none">00:00</div>
-                        <div id="display-ampm" class="absolute left-full ml-4 bottom-2 text-[25px] font-bold text-gray-500 whitespace-nowrap">--</div>
-                    </div>
+                    <div class="relative flex items-center justify-center"><div id="display-time" class="text-[125px] font-black leading-none">00:00</div><div id="display-ampm" class="absolute left-full ml-4 bottom-2 text-[25px] font-bold text-gray-500 whitespace-nowrap">--</div></div>
                 </div>
             </div>
         </header>
@@ -220,26 +179,18 @@
                     </div>
                     <div class="address-bar-container">
                         <input type="text" id="font-size-input" value="70px" onchange="updateChalkStyle()">
-                        <div class="btn-clear-all" onclick="showBlackboardConfirm()">
-                            <svg viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                        </div>
+                        <div class="btn-clear-all" onclick="showBlackboardConfirm()"><svg viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
                     </div>
                 </div>
                 <div id="blackboard-confirm">
                     <p class="text-xl font-bold mb-4 text-gray-700">칠판의 모든 내용을 삭제할까요?</p>
-                    <div class="flex gap-3">
-                        <button onclick="executeClear()" class="bg-red-500 text-white px-5 py-2 rounded-lg font-bold">삭제</button>
-                        <button onclick="hideBlackboardConfirm()" class="bg-gray-200 px-5 py-2 rounded-lg font-bold text-gray-600">취소</button>
-                    </div>
+                    <div class="flex gap-3"><button onclick="executeClear()" class="bg-red-500 text-white px-5 py-2 rounded-lg font-bold">삭제</button><button onclick="hideBlackboardConfirm()" class="bg-gray-200 px-5 py-2 rounded-lg font-bold text-gray-600">취소</button></div>
                 </div>
                 <div id="blackboard-input" contenteditable="true" spellcheck="false" class="flex-grow bg-white" style="color: #333; font-size: 70px;" oninput="onBlackboardInput()"></div>
             </div>
-
             <div class="window-frame schedule-window-width" style="height: fit-content; overflow: visible;">
                 <div class="window-header flex justify-between items-center pr-4"><div class="flex gap-2"><div class="dot-gray"></div><div class="dot-gray"></div><div class="dot-gray"></div></div></div>
-                <div id="schedule-list" style="padding-bottom: 25px; position: relative;">
-                    <div id="break-indicator"></div>
-                </div>
+                <div id="schedule-list" style="padding-bottom: 25px; position: relative;"><div id="break-indicator"></div></div>
             </div>
         </main>
 
@@ -258,15 +209,18 @@
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbzoCgmF_cfpNOaImXQ7yY0UPOZ5eDuH1whp7NKTdEAvjPWGO6y5GzvafqySyy3Oul1l/exec";
         let cleanupInterval, cleanupSeconds = 120, isTimerRunning = false, blackboardSaveTimeout;
-        let lastCheckedDate = new Date().toISOString().split('T')[0];
+        let lastCheckedDate = new Date().toLocaleDateString('ko-KR');
 
         function adjustScale() { const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080); document.getElementById('app-scaler').style.transform = `translate(-50%, -50%) scale(${scale})`; }
         window.addEventListener('resize', adjustScale);
 
         function updateClock() {
-            const now = new Date();
-            const todayStr = now.toISOString().split('T')[0];
-            if (lastCheckedDate !== todayStr) { lastCheckedDate = todayStr; fetchEmotionData(); }
+            const now = new Date(); 
+            const todayStr = now.toLocaleDateString('ko-KR'); // [수정] 한국 시간 기준 날짜 확인
+            if (lastCheckedDate !== todayStr) { 
+                lastCheckedDate = todayStr; 
+                fetchEmotionData(); // 날짜 바뀌면 감정카드 갱신
+            }
             const h = now.getHours() % 12 || 12;
             document.getElementById('display-date').innerHTML = `<span class="text-cyan-600">${now.getMonth() + 1}</span>월 <span class="text-cyan-600">${now.getDate()}</span>일 <span class="text-cyan-600">${["일","월","화","수","목","금","토"][now.getDay()]}</span>요일`;
             document.getElementById('display-time').textContent = `${String(h).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -276,25 +230,28 @@
 
         async function fetchEmotionData() {
             try {
-                const [dataRes, stateRes] = await Promise.all([ fetch(`${GAS_URL}?sheet=학생용_바탕화면&range=B5:C84`), fetch(`${GAS_URL}?sheet=학생용_바탕화면&range=F1`) ]);
+                const [dataRes, stateRes] = await Promise.all([ 
+                    fetch(`${GAS_URL}?sheet=학생용_바탕화면&range=B5:C84`), 
+                    fetch(`${GAS_URL}?sheet=학생용_바탕화면&range=F1`) 
+                ]);
                 const emotions = await dataRes.json();
                 let stateRaw = await stateRes.json(), state;
                 const today = new Date(); today.setHours(0,0,0,0);
+                const todayStr = today.toLocaleDateString('ko-KR');
+
                 try { state = (typeof stateRaw === 'object' && stateRaw.data) ? JSON.parse(stateRaw.data) : JSON.parse(stateRaw); } catch(e) { state = null; }
 
-                if (!state || !state.sequence || !state.startDate) {
-                    const seq = Array.from({length: 80}, (_, i) => i);
-                    for (let i = seq.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [seq[i], seq[j]] = [seq[j], seq[i]]; }
-                    state = { sequence: seq, startDate: today.toISOString().split('T')[0] };
+                if (!state || !state.startDate) {
+                    state = { startDate: todayStr };
                     await fetch(`${GAS_URL}?sheet=학생용_바탕화면`, { method: 'POST', body: JSON.stringify({ data: JSON.stringify(state), range: "F1" }) });
                 }
-                const start = new Date(state.startDate);
-                const diffTime = Math.abs(today - start);
-                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                const emotionIdx = state.sequence[diffDays % 80];
-                const selected = emotions[emotionIdx];
+
+                const start = new Date(state.startDate), diffTime = Math.abs(today - start), diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                const emotionIdx = diffDays % 80, selected = emotions[emotionIdx];
                 const wEl = document.getElementById('emotion-word'), dEl = document.getElementById('emotion-desc');
+                
                 wEl.textContent = selected[0] || "반가워"; dEl.textContent = selected[1] || "";
+                
                 setTimeout(() => {
                     let ws = 60; wEl.style.fontSize = ws + 'px'; while (wEl.scrollWidth > 350 && ws > 25) { ws -= 2; wEl.style.fontSize = ws + 'px'; }
                     let ds = 30; dEl.style.fontSize = ds + 'px'; while (dEl.scrollHeight > 85 && ds > 18) { ds -= 1; dEl.style.fontSize = ds + 'px'; }
@@ -345,10 +302,8 @@
         function updateCleanupTimer() {
             if (cleanupSeconds <= 0) { 
                 clearInterval(cleanupInterval); document.getElementById('timer-title').style.visibility = 'hidden';
-                const d = document.getElementById('cleanup-display'); 
-                d.innerHTML = "자리에 예쁘게 앉아<br>책을 펴요."; d.className = "finished-msg px-12"; 
-                document.getElementById('goal-target').style.display = 'none';
-                document.getElementById('cleanup-bar').style.width = '0%'; isTimerRunning = false; return;
+                const d = document.getElementById('cleanup-display'); d.innerHTML = "자리에 예쁘게 앉아<br>책을 펴요."; d.className = "finished-msg px-12"; 
+                document.getElementById('goal-target').style.display = 'none'; document.getElementById('cleanup-bar').style.width = '0%'; isTimerRunning = false; return;
             }
             cleanupSeconds--; const m = Math.floor(cleanupSeconds / 60), s = cleanupSeconds % 60;
             document.getElementById('cleanup-display').textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
