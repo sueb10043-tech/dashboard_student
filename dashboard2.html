@@ -69,8 +69,6 @@
         .date-weather-window-width { width: 780px; height: 200px; flex-shrink: 0; } 
         .blank-window-width { width: 374px; height: 200px; flex-shrink: 0; } 
         .clock-window-width { width: 550px; height: 200px; flex-shrink: 0; }
-        
-        /* 시계 폰트 스타일 전용 설정 */
         #display-time { font-family: 'Public Sans', sans-serif; letter-spacing: -0.02em; }
 
         .dock-container { position: absolute; bottom: 70px; left: 0; right: 0; display: flex; justify-content: center; z-index: 100; pointer-events: none; }
@@ -96,7 +94,7 @@
             line-height: 1.2; animation: fadeIn 0.5s ease-out; margin-top: 10px; margin-bottom: 40px !important; 
             height: 170px; display: flex; align-items: center; justify-content: center;
         }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; opacity: 1; transform: translateY(0); } }
 
         .btn-clear-all { margin-left: auto; cursor: pointer; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #fee2e2; transition: background 0.2s; }
         .btn-clear-all svg { width: 12px; height: 12px; stroke: #ef4444; stroke-width: 3.5; stroke-linecap: round; }
@@ -160,7 +158,7 @@
                         <div id="emotion-word" class="font-black text-cyan-700 leading-none whitespace-nowrap" style="font-size: 60px;">반가워</div>
                     </div>
                     <div id="emotion-desc-container" class="w-full flex items-center justify-center">
-                        <div id="emotion-desc" class="font-bold text-gray-500 leading-snug break-keep" style="font-size: 30px;">오늘 하루도 힘내세요!</div>
+                        <div id="emotion-desc" class="font-bold text-gray-500 leading-snug break-keep" style="font-size: 30px;">데이터 로드 중...</div>
                     </div>
                 </div>
             </div>
@@ -200,14 +198,13 @@
                     <div class="flex gap-2"><div class="dot-gray"></div><div class="dot-gray"></div><div class="dot-gray"></div></div>
                     <div class="flex gap-1.5 items-center">
                         <div id="btn-4per" class="period-toggle-btn" onclick="toggleScheduleMode(4)">4</div>
-                        <div id="btn-5per" class="period-toggle-btn active" onclick="toggleScheduleMode(5)">5</div>
+                        <div id="btn-5per" class="period-toggle-btn" onclick="toggleScheduleMode(5)">5</div>
                     </div>
                 </div>
                 <div id="schedule-list" style="padding-bottom: 25px; position: relative;"><div id="break-indicator"></div></div>
             </div>
         </main>
 
-        <!-- 하단 독바 -->
         <div class="dock-container">
             <div class="dock-bar">
                 <div class="app-icon-wrapper" onclick="openApp('timer')"><div class="app-icon-box bg-app-blue"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0369a1" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><span class="app-label">정리시간</span></div>
@@ -220,96 +217,74 @@
         </div>
     </div>
 
-    <!-- Firebase SDK & 전역 로직 통합 스크립트 -->
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
-
+    <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbzoCgmF_cfpNOaImXQ7yY0UPOZ5eDuH1whp7NKTdEAvjPWGO6y5GzvafqySyy3Oul1l/exec";
         
-        // 전역 상태 변수
-        let currentUser = null;
-        let isTimerRunning = false;
-        let cleanupInterval, cleanupSeconds = 120;
-        let blackboardSaveTimeout;
+        let isTimerRunning = false, cleanupInterval, cleanupSeconds = 120, blackboardSaveTimeout;
         let lastCheckedDateISO = new Date().toISOString().split('T')[0];
-        let currentScheduleMode = 5;
-        let fetchedRawSchedule = null;
+        let currentScheduleMode = 5, fetchedRawSchedule = null;
 
-        // Firebase 설정 (안전한 파싱)
-        let fbConfig = {};
-        try { fbConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}'); } catch(e) {}
-        const app = initializeApp(fbConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
-        // 1. 유틸리티 함수
-        function safeParse(input) {
-            if (typeof input === 'object' && input !== null) return input;
-            try { return JSON.parse(input); } catch(e) { return null; }
-        }
-
-        // 2. 통합 시계 및 날짜 체크 (중복 제거된 유일한 함수)
+        // 1. 시계 및 날짜 업데이트 (독립 실행)
         function refreshClock() {
             const now = new Date();
             const todayISO = now.toISOString().split('T')[0];
-
-            // 날짜 변경 시 데이터 재요청
-            if (lastCheckedDateISO !== todayISO) {
-                lastCheckedDateISO = todayISO;
-                fetchEmotionData();
-                fetchSchedule();
-            }
+            if (lastCheckedDateISO !== todayISO) { lastCheckedDateISO = todayISO; fetchEmotionData(); fetchSchedule(); }
 
             const h = now.getHours() % 12 || 12;
             const m = String(now.getMinutes()).padStart(2, '0');
             const dayMap = ["일","월","화","수","목","금","토"];
 
-            const dateEl = document.getElementById('display-date');
-            if(dateEl) dateEl.innerHTML = `<span class="text-cyan-600">${now.getMonth() + 1}</span>월 <span class="text-cyan-600">${now.getDate()}</span>일 <span class="text-cyan-600">${dayMap[now.getDay()]}</span>요일`;
-            
-            const timeEl = document.getElementById('display-time');
-            if(timeEl) timeEl.textContent = `${String(h).padStart(2, '0')}:${m}`;
-            
-            const ampmEl = document.getElementById('display-ampm');
-            if(ampmEl) ampmEl.textContent = now.getHours() >= 12 ? '오후' : '오전';
-
+            document.getElementById('display-date').innerHTML = `<span class="text-cyan-600">${now.getMonth() + 1}</span>월 <span class="text-cyan-600">${now.getDate()}</span>일 <span class="text-cyan-600">${dayMap[now.getDay()]}</span>요일`;
+            document.getElementById('display-time').textContent = `${String(h).padStart(2, '0')}:${m}`;
+            document.getElementById('display-ampm').textContent = now.getHours() >= 12 ? '오후' : '오전';
             updateScheduleHighlight();
         }
 
-        // 3. 시정표 로직 (버튼 저장 포함)
-        window.toggleScheduleMode = async function(mode) {
+        // 2. GAS 기반 설정 저장 및 로드 (G1 셀 활용)
+        async function saveSchedulePreference(mode) {
+            try {
+                await fetch(`${GAS_URL}?sheet=학생용_바탕화면`, { 
+                    method: 'POST', 
+                    body: JSON.stringify({ data: mode.toString(), range: "G1" }) 
+                });
+            } catch (e) {}
+        }
+
+        async function loadSchedulePreference() {
+            try {
+                const res = await fetch(`${GAS_URL}?sheet=학생용_바탕화면&range=G1`);
+                const val = await res.json();
+                const mode = parseInt(val.data || val);
+                if (mode === 4 || mode === 5) {
+                    currentScheduleMode = mode;
+                    updateToggleButtonsUI();
+                    renderScheduleList();
+                }
+            } catch (e) {}
+        }
+
+        // 3. 시정표 기능
+        function toggleScheduleMode(mode) {
             currentScheduleMode = mode;
             updateToggleButtonsUI();
             renderScheduleList();
-            if (currentUser) {
-                try {
-                    const ref = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'scheduleConfig');
-                    await setDoc(ref, { mode: mode }, { merge: true });
-                } catch (e) {}
-            }
-        };
+            saveSchedulePreference(mode);
+        }
 
         function updateToggleButtonsUI() {
-            const b4 = document.getElementById('btn-4per'), b5 = document.getElementById('btn-5per');
-            if(b4) b4.classList.toggle('active', currentScheduleMode === 4);
-            if(b5) b5.classList.toggle('active', currentScheduleMode === 5);
+            document.getElementById('btn-4per').classList.toggle('active', currentScheduleMode === 4);
+            document.getElementById('btn-5per').classList.toggle('active', currentScheduleMode === 5);
         }
 
         async function fetchSchedule() {
             const dayMap = ["일","월","화","수","목","금","토"];
             const today = dayMap[new Date().getDay()];
             const fallback = ["1교시 09:00-09:40", "2교시 09:50-10:30", "3교시 10:40-11:20", "4교시 11:30-12:10", "점심시간 12:10-13:10", "5교시 13:10-13:50"];
-            
             try {
                 const res = await fetch(`${GAS_URL}?sheet=학생용_바탕화면`);
                 const data = await res.json();
                 fetchedRawSchedule = (data && Array.isArray(data[today])) ? data[today] : fallback;
-            } catch (e) {
-                fetchedRawSchedule = fallback;
-            }
+            } catch (e) { fetchedRawSchedule = fallback; }
             renderScheduleList();
         }
 
@@ -357,7 +332,7 @@
             if (breakIdx !== -1 && !anyActive) { ind.style.display = 'flex'; ind.style.top = (90 * breakIdx) + 'px'; } else { ind.style.display = 'none'; }
         }
 
-        // 4. 감정 카드 (KST 자정 기준 순차 순환)
+        // 4. 감정 카드 (KST 자정 순차 순환)
         async function fetchEmotionData() {
             try {
                 const [dataRes, stateRes] = await Promise.all([ 
@@ -369,8 +344,7 @@
                 const todayKST = new Date().toLocaleDateString('ko-KR');
                 const midnight = new Date(); midnight.setHours(0,0,0,0);
 
-                let state = safeParse(stateRaw);
-                if (state && state.data) state = safeParse(state.data);
+                let state = (typeof stateRaw === 'object' && stateRaw.data) ? JSON.parse(stateRaw.data) : JSON.parse(stateRaw || "{}");
 
                 if (!state || !state.startDate) {
                     state = { startDate: todayKST };
@@ -378,25 +352,17 @@
                 }
 
                 const start = new Date(state.startDate), diffDays = Math.floor(Math.abs(midnight - start) / (1000 * 60 * 60 * 24));
-                const emotionIdx = diffDays % (emotions.length || 80);
-                const selected = emotions[emotionIdx] || ["반가워", "오늘 하루도 힘내요!"];
-                
-                const wEl = document.getElementById('emotion-word'), dEl = document.getElementById('emotion-desc');
-                if(wEl && dEl) {
-                    wEl.textContent = selected[0]; dEl.textContent = selected[1];
-                    setTimeout(() => {
-                        let ws = 60; wEl.style.fontSize = ws + 'px'; while (wEl.scrollWidth > 350 && ws > 25) { ws -= 2; wEl.style.fontSize = ws + 'px'; }
-                        let ds = 30; dEl.style.fontSize = ds + 'px'; while (dEl.scrollHeight > 85 && ds > 18) { ds -= 1; dEl.style.fontSize = ds + 'px'; }
-                    }, 50);
-                }
+                const emotionIdx = diffDays % 80, selected = emotions[emotionIdx] || ["반가워", "힘내세요!"];
+                document.getElementById('emotion-word').textContent = selected[0];
+                document.getElementById('emotion-desc').textContent = selected[1];
             } catch (e) {}
         }
 
-        // 5. 칠판 기능
+        // 5. 칠판 및 기타 유틸
         window.onBlackboardInput = () => { clearTimeout(blackboardSaveTimeout); blackboardSaveTimeout = setTimeout(saveBlackboard, 1000); };
         async function saveBlackboard() {
             const content = document.getElementById('blackboard-input').innerHTML;
-            if (content === "[object Object]" || !content) return;
+            if (content === "[object Object]") return;
             try { await fetch(`${GAS_URL}?sheet=학생용_바탕화면`, { method: 'POST', body: JSON.stringify({ data: content, range: "E1" }) }); } catch (e) {}
         }
         window.loadBlackboard = async function() {
@@ -404,51 +370,26 @@
                 const res = await fetch(`${GAS_URL}?sheet=학생용_바탕화면&range=E1`);
                 const raw = await res.json();
                 const content = (raw && raw.data) ? raw.data : raw;
-                if (content && typeof content === 'string' && content !== "{}" && content !== "[object Object]") document.getElementById('blackboard-input').innerHTML = content;
+                if (content && typeof content === 'string' && content !== "{}") document.getElementById('blackboard-input').innerHTML = content;
             } catch (e) {}
         };
 
-        // 6. 앱 초기화 시퀀스
-        async function initDashboard() {
-            // 시계 즉시 시작 (데이터 로딩과 무관하게 작동 보장)
-            refreshClock();
-            setInterval(refreshClock, 1000);
+        function adjustScale() { document.getElementById('app-scaler').style.transform = `translate(-50%, -50%) scale(${Math.min(window.innerWidth / 1920, window.innerHeight / 1080)})`; }
+
+        // 6. 초기화
+        window.onload = async () => {
+            adjustScale(); window.addEventListener('resize', adjustScale);
+            refreshClock(); setInterval(refreshClock, 1000);
             
-            // 배율 조정
-            const adjust = () => {
-                const el = document.getElementById('app-scaler');
-                if(el) el.style.transform = `translate(-50%, -50%) scale(${Math.min(window.innerWidth / 1920, window.innerHeight / 1080)})`;
-            };
-            window.addEventListener('resize', adjust); adjust();
-
-            // Firebase 인증 및 개인 설정 로드
-            try {
-                const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-                if (token) await signInWithCustomToken(auth, token); else await signInAnonymously(auth);
-            } catch (err) {}
-
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    currentUser = user;
-                    try {
-                        const snap = await getDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'scheduleConfig'));
-                        if (snap.exists()) {
-                            currentScheduleMode = snap.data().mode || 5;
-                            updateToggleButtonsUI();
-                            renderScheduleList();
-                        }
-                    } catch (e) {}
-                }
-            });
-
-            // 기타 비동기 데이터 병렬 로드
+            // 데이터 병렬 로드 (인증 로직 제거로 즉시 실행)
+            loadSchedulePreference();
             fetchWeather();
             fetchEmotionData();
             fetchSchedule();
-            window.loadBlackboard();
-        }
+            loadBlackboard();
+        };
 
-        // 전역 함수 등록
+        // 전역 UI 제어 함수
         window.showBlackboardConfirm = () => document.getElementById('blackboard-confirm').style.display = 'flex';
         window.hideBlackboardConfirm = () => document.getElementById('blackboard-confirm').style.display = 'none';
         window.executeClear = () => { document.getElementById('blackboard-input').innerHTML = ""; saveBlackboard(); window.hideBlackboardConfirm(); };
@@ -457,10 +398,10 @@
             let size = document.getElementById('font-size-input').value; if(!isNaN(size) && size !== "") size = size + 'px';
             document.getElementById('blackboard-input').style.fontSize = size; saveBlackboard();
         };
-        window.toggleCleanupTimer = function() {
+        window.toggleCleanupTimer = () => {
             const icon = document.getElementById('ctrl-icon');
-            if (isTimerRunning) { clearInterval(cleanupInterval); icon.innerHTML = '<path d="M8 5v14l11-7z"/>'; isTimerRunning = false;
-            } else { cleanupInterval = setInterval(updateCleanupTimer, 1000); icon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; isTimerRunning = true; }
+            if (isTimerRunning) { clearInterval(cleanupInterval); icon.innerHTML = '<path d="M8 5v14l11-7z"/>'; isTimerRunning = false; }
+            else { cleanupInterval = setInterval(updateCleanupTimer, 1000); icon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; isTimerRunning = true; }
         };
         function updateCleanupTimer() {
             if (cleanupSeconds <= 0) { 
@@ -469,11 +410,10 @@
                 document.getElementById('goal-target').style.display = 'none'; document.getElementById('cleanup-bar').style.width = '0%'; isTimerRunning = false; return;
             }
             cleanupSeconds--;
-            const m = Math.floor(cleanupSeconds / 60), s = cleanupSeconds % 60;
-            document.getElementById('cleanup-display').textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            document.getElementById('cleanup-display').textContent = `${String(Math.floor(cleanupSeconds / 60)).padStart(2, '0')}:${String(cleanupSeconds % 60).padStart(2, '0')}`;
             document.getElementById('cleanup-bar').style.width = `${(cleanupSeconds / 120) * 100}%`;
         }
-        window.resetCleanupTimer = function() {
+        window.resetCleanupTimer = () => {
             clearInterval(cleanupInterval); cleanupSeconds = 120; isTimerRunning = false; document.getElementById('timer-title').style.visibility = 'visible';
             const d = document.getElementById('cleanup-display'); d.textContent = "02:00"; d.className = "text-[180px] font-black text-blue-600 leading-none";
             document.getElementById('cleanup-bar').style.width = '100%'; document.getElementById('goal-target').style.display = 'block'; document.getElementById('ctrl-icon').innerHTML = '<path d="M8 5v14l11-7z"/>';
@@ -482,17 +422,14 @@
         window.closeAppModals = (e) => { if (e.target.classList.contains('modal-overlay')) { e.target.style.display = 'none'; if (e.target.id === 'timer-modal') window.resetCleanupTimer(); } };
         window.toggleBlackout = () => { const el = document.getElementById('blackout-overlay'); el.style.display = el.style.display === 'block' ? 'none' : 'block'; };
         window.openPopup = (url, w, h, winName) => { const l = (screen.width - w) / 2, t = (screen.height - h) / 2; window.open(url, winName, `width=${w},height=${h},left=${l},top=${t},popup=yes,resizable=yes,scrollbars=yes,status=no,location=no`); };
-        
         async function fetchWeather() {
             try {
                 const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=36.195&longitude=128.093&current_weather=true`);
-                const weatherData = await res.json();
+                const data = await res.json();
                 const map = { 0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️", 61: "🌧️", 71: "❄️", 95: "⚡" };
-                document.getElementById('weather-icon').textContent = map[weatherData.current_weather.weathercode] || "🌤️";
+                document.getElementById('weather-icon').textContent = map[data.current_weather.weathercode] || "🌤️";
             } catch(e) {}
         }
-
-        window.onload = initDashboard;
     </script>
 </body>
 </html>
