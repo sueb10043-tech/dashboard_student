@@ -13,10 +13,11 @@
         * { -webkit-font-smoothing: subpixel-antialiased; text-rendering: geometricPrecision; box-sizing: border-box; }
         body { font-family: 'Gowun Dodum', 'Noto Sans KR', sans-serif; margin: 0; padding: 0; width: 100vw; height: 100vh; background-color: #d8eeff; overflow: hidden; display: flex; align-items: center; justify-content: center; }
         
+        /* [수정] 상하 여백을 각각 10px로 축소 */
         #app-scaler { 
             width: 1920px; height: 1080px; flex-shrink: 0; position: absolute; left: 50%; top: 50%; 
             transform: translate(-50%, -50%); transform-origin: center center; 
-            display: flex; flex-direction: column; padding: 40px 60px; background-color: #d8eeff; 
+            display: flex; flex-direction: column; padding: 10px 60px; background-color: #d8eeff; 
         }
 
         .window-frame { 
@@ -35,7 +36,10 @@
 
         .dot-gray { width: 10px; height: 10px; border-radius: 50%; background: #d1d5db; }
         .address-bar-container { background: white; flex-grow: 1; height: 32px; border-radius: 16px; border: 1px solid #e5e7eb; display: flex; align-items: center; padding: 0 10px; gap: 8px; }
+        
+        /* 칠판 입력창: 위 여백 20px 설정 유지 */
         #blackboard-input { width: 100%; height: 100%; padding: 20px; border: none; outline: none; overflow-y: auto; line-height: 1.6; font-weight: bold; white-space: pre-wrap; word-break: break-all; }
+        
         #blackboard-confirm { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); backdrop-filter: blur(4px); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 100; border-radius: 0.75rem; }
 
         .schedule-window-width { width: 450px; flex-shrink: 0; }
@@ -128,7 +132,7 @@
                     <div id="goal-target" class="absolute -left-8 -top-16 w-20 h-20">
                         <svg viewBox="0 0 100 100">
                             <path d="M30 40 Q 50 20, 70 40 L 55 90 Q 50 95, 45 90 Z" fill="#fb923c" />
-                            <path d="M50 40 Q 55 10, 70 20 M 50 40 Q 45 5, 30 15 M 50 40 Q 40 15, 25 25" stroke="#4ade80" stroke-width="6" fill="none" stroke-linecap="round"/>
+                            <path d="M50 40 Q 55 10, 70 20 M 50 40 Q 45 5, 30 15 M 50 40 Q 35 15, 20 25" stroke="#4ade80" stroke-width="6" fill="none" stroke-linecap="round"/>
                             <path d="M40 55 H 60 M 42 70 H 55 M 45 80 H 50" stroke="#ea580c" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
                         </svg>
                     </div>
@@ -174,7 +178,7 @@
         </header>
 
         <main class="flex gap-12 items-start"> 
-            <div class="window-frame flex-grow" style="height: 612px;">
+            <div class="window-frame flex-grow" style="height: 620px;">
                 <div class="browser-header">
                     <div class="flex gap-2 items-center">
                         <div class="color-dot w-4 h-4 rounded-full bg-red-500 cursor-pointer" onclick="setChalkColor('#ef4444')"></div>
@@ -198,7 +202,7 @@
                     <div class="flex gap-2"><div class="dot-gray"></div><div class="dot-gray"></div><div class="dot-gray"></div></div>
                     <div class="flex gap-1.5 items-center">
                         <div id="btn-4per" class="period-toggle-btn" onclick="toggleScheduleMode(4)">4</div>
-                        <div id="btn-5per" class="period-toggle-btn" onclick="toggleScheduleMode(5)">5</div>
+                        <div id="btn-5per" class="period-toggle-btn active" onclick="toggleScheduleMode(5)">5</div>
                     </div>
                 </div>
                 <div id="schedule-list" style="padding-bottom: 25px; position: relative;"><div id="break-indicator"></div></div>
@@ -224,18 +228,16 @@
         let lastCheckedDateISO = new Date().toISOString().split('T')[0];
         let currentScheduleMode = 5, fetchedRawSchedule = null;
 
-        // [핵심 유틸] 데이터 안전 파싱 (이중 문자열화 대응)
         function safeParse(input) {
             if (!input) return null;
             if (typeof input === 'object') return input;
             try {
                 let parsed = JSON.parse(input);
-                if (typeof parsed === 'string') return JSON.parse(parsed); // 한 번 더 파싱 (이중 문자열 대응)
+                if (typeof parsed === 'string') return JSON.parse(parsed);
                 return parsed;
-            } catch(e) { return input; } // JSON이 아니면 원본 반환
+            } catch(e) { return input; }
         }
 
-        // 시계 및 날짜 업데이트 (즉시 실행용)
         function refreshClock() {
             const now = new Date();
             const todayISO = now.toISOString().split('T')[0];
@@ -260,7 +262,6 @@
             updateScheduleHighlight();
         }
 
-        // GAS 기반 설정 저장/로드
         async function saveSchedulePreference(mode) {
             try { await fetch(`${GAS_URL}?sheet=학생용_바탕화면`, { method: 'POST', body: JSON.stringify({ data: mode.toString(), range: "G1" }) }); } catch (e) {}
         }
@@ -284,8 +285,10 @@
         }
 
         function updateToggleButtonsUI() {
-            document.getElementById('btn-4per').classList.toggle('active', currentScheduleMode === 4);
-            document.getElementById('btn-5per').classList.toggle('active', currentScheduleMode === 5);
+            const b4 = document.getElementById('btn-4per');
+            const b5 = document.getElementById('btn-5per');
+            if(b4) b4.classList.toggle('active', currentScheduleMode === 4);
+            if(b5) b5.classList.toggle('active', currentScheduleMode === 5);
         }
 
         async function fetchSchedule() {
@@ -344,7 +347,6 @@
             if (breakIdx !== -1 && !anyActive) { ind.style.display = 'flex'; ind.style.top = (90 * breakIdx) + 'px'; } else { ind.style.display = 'none'; }
         }
 
-        // [수정] 감정 카드 로직 (파싱 및 의미 출력 강화)
         async function fetchEmotionData() {
             try {
                 const [dataRes, stateRes] = await Promise.all([ 
@@ -353,10 +355,10 @@
                 ]);
                 
                 let emotions = await dataRes.json();
-                emotions = safeParse(emotions); // 이중 문자열 대응
+                emotions = safeParse(emotions); 
 
                 let stateRaw = await stateRes.json();
-                let state = safeParse(stateRaw); // 순수 글자 데이터 대응
+                let state = safeParse(stateRaw); 
 
                 const todayKST = new Date().toLocaleDateString('ko-KR');
                 const midnight = new Date(); midnight.setHours(0,0,0,0);
@@ -370,7 +372,6 @@
                 const diffDays = Math.floor(Math.abs(midnight - start) / (1000 * 60 * 60 * 24));
                 const emotionIdx = diffDays % 80;
                 
-                // 감정 데이터 선별 (단어/의미)
                 const selected = (emotions && emotions[emotionIdx]) ? emotions[emotionIdx] : ["반가워", "오늘 하루도 힘내세요!"];
                 
                 const wEl = document.getElementById('emotion-word');
@@ -379,7 +380,6 @@
                 if(wEl) wEl.textContent = selected[0] || "반가워";
                 if(dEl) dEl.textContent = selected[1] || "오늘 하루도 힘내세요!";
 
-                // 폰트 크기 자동 조정
                 setTimeout(() => {
                     if(wEl) { let ws = 60; wEl.style.fontSize = ws + 'px'; while (wEl.scrollWidth > 350 && ws > 25) { ws -= 2; wEl.style.fontSize = ws + 'px'; } }
                     if(dEl) { let ds = 30; dEl.style.fontSize = ds + 'px'; while (dEl.scrollHeight > 85 && ds > 18) { ds -= 1; dEl.style.fontSize = ds + 'px'; } }
@@ -405,9 +405,7 @@
 
         window.onload = async () => {
             adjustScale(); window.addEventListener('resize', adjustScale);
-            refreshClock(); setInterval(refreshClock, 1000); // 시계 즉시 작동
-            
-            // 데이터 로드
+            refreshClock(); setInterval(refreshClock, 1000);
             loadSchedulePreference();
             fetchWeather();
             fetchEmotionData();
@@ -415,7 +413,6 @@
             loadBlackboard();
         };
 
-        // 전역 UI 제어 함수들
         window.showBlackboardConfirm = () => document.getElementById('blackboard-confirm').style.display = 'flex';
         window.hideBlackboardConfirm = () => document.getElementById('blackboard-confirm').style.display = 'none';
         window.executeClear = () => { document.getElementById('blackboard-input').innerHTML = ""; saveBlackboard(); window.hideBlackboardConfirm(); };
