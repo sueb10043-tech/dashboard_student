@@ -94,7 +94,7 @@
             line-height: 1.2; animation: fadeIn 0.5s ease-out; margin-top: 10px; margin-bottom: 40px !important; 
             height: 170px; display: flex; align-items: center; justify-content: center;
         }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         .btn-clear-all { margin-left: auto; cursor: pointer; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #fee2e2; transition: background 0.2s; }
         .btn-clear-all svg { width: 12px; height: 12px; stroke: #ef4444; stroke-width: 3.5; stroke-linecap: round; }
@@ -155,7 +155,7 @@
                 <div class="window-header"><div class="dot-gray"></div><div class="dot-gray"></div><div class="dot-gray"></div></div>
                 <div class="flex-grow flex flex-col items-center justify-center px-[10px] py-5 text-center overflow-hidden">
                     <div id="emotion-word-container" class="w-full flex justify-center mb-3">
-                        <div id="emotion-word" class="font-black text-cyan-700 leading-none whitespace-nowrap" style="font-size: 60px;">반가워</div>
+                        <div id="emotion-word" class="font-black text-cyan-700 leading-none whitespace-nowrap" style="font-size: 60px;">로딩 중</div>
                     </div>
                     <div id="emotion-desc-container" class="w-full flex items-center justify-center">
                         <div id="emotion-desc" class="font-bold text-gray-500 leading-snug break-keep" style="font-size: 30px;">데이터 로드 중...</div>
@@ -224,30 +224,45 @@
         let lastCheckedDateISO = new Date().toISOString().split('T')[0];
         let currentScheduleMode = 5, fetchedRawSchedule = null;
 
-        // 1. 시계 및 날짜 업데이트 (독립 실행)
+        // [핵심 유틸] 데이터 안전 파싱 (이중 문자열화 대응)
+        function safeParse(input) {
+            if (!input) return null;
+            if (typeof input === 'object') return input;
+            try {
+                let parsed = JSON.parse(input);
+                if (typeof parsed === 'string') return JSON.parse(parsed); // 한 번 더 파싱 (이중 문자열 대응)
+                return parsed;
+            } catch(e) { return input; } // JSON이 아니면 원본 반환
+        }
+
+        // 시계 및 날짜 업데이트 (즉시 실행용)
         function refreshClock() {
             const now = new Date();
             const todayISO = now.toISOString().split('T')[0];
-            if (lastCheckedDateISO !== todayISO) { lastCheckedDateISO = todayISO; fetchEmotionData(); fetchSchedule(); }
+            if (lastCheckedDateISO !== todayISO) { 
+                lastCheckedDateISO = todayISO; 
+                fetchEmotionData(); fetchSchedule(); 
+            }
 
             const h = now.getHours() % 12 || 12;
             const m = String(now.getMinutes()).padStart(2, '0');
             const dayMap = ["일","월","화","수","목","금","토"];
 
-            document.getElementById('display-date').innerHTML = `<span class="text-cyan-600">${now.getMonth() + 1}</span>월 <span class="text-cyan-600">${now.getDate()}</span>일 <span class="text-cyan-600">${dayMap[now.getDay()]}</span>요일`;
-            document.getElementById('display-time').textContent = `${String(h).padStart(2, '0')}:${m}`;
-            document.getElementById('display-ampm').textContent = now.getHours() >= 12 ? '오후' : '오전';
+            const dEl = document.getElementById('display-date');
+            if(dEl) dEl.innerHTML = `<span class="text-cyan-600">${now.getMonth() + 1}</span>월 <span class="text-cyan-600">${now.getDate()}</span>일 <span class="text-cyan-600">${dayMap[now.getDay()]}</span>요일`;
+            
+            const tEl = document.getElementById('display-time');
+            if(tEl) tEl.textContent = `${String(h).padStart(2, '0')}:${m}`;
+            
+            const aEl = document.getElementById('display-ampm');
+            if(aEl) aEl.textContent = now.getHours() >= 12 ? '오후' : '오전';
+            
             updateScheduleHighlight();
         }
 
-        // 2. GAS 기반 설정 저장 및 로드 (G1 셀 활용)
+        // GAS 기반 설정 저장/로드
         async function saveSchedulePreference(mode) {
-            try {
-                await fetch(`${GAS_URL}?sheet=학생용_바탕화면`, { 
-                    method: 'POST', 
-                    body: JSON.stringify({ data: mode.toString(), range: "G1" }) 
-                });
-            } catch (e) {}
+            try { await fetch(`${GAS_URL}?sheet=학생용_바탕화면`, { method: 'POST', body: JSON.stringify({ data: mode.toString(), range: "G1" }) }); } catch (e) {}
         }
 
         async function loadSchedulePreference() {
@@ -257,17 +272,14 @@
                 const mode = parseInt(val.data || val);
                 if (mode === 4 || mode === 5) {
                     currentScheduleMode = mode;
-                    updateToggleButtonsUI();
-                    renderScheduleList();
+                    updateToggleButtonsUI(); renderScheduleList();
                 }
             } catch (e) {}
         }
 
-        // 3. 시정표 기능
         function toggleScheduleMode(mode) {
             currentScheduleMode = mode;
-            updateToggleButtonsUI();
-            renderScheduleList();
+            updateToggleButtonsUI(); renderScheduleList();
             saveSchedulePreference(mode);
         }
 
@@ -332,37 +344,52 @@
             if (breakIdx !== -1 && !anyActive) { ind.style.display = 'flex'; ind.style.top = (90 * breakIdx) + 'px'; } else { ind.style.display = 'none'; }
         }
 
-        // 4. 감정 카드 (KST 자정 순차 순환)
+        // [수정] 감정 카드 로직 (파싱 및 의미 출력 강화)
         async function fetchEmotionData() {
             try {
                 const [dataRes, stateRes] = await Promise.all([ 
                     fetch(`${GAS_URL}?sheet=학생용_바탕화면&range=B5:C84`), 
                     fetch(`${GAS_URL}?sheet=학생용_바탕화면&range=F1`) 
                 ]);
-                const emotions = await dataRes.json();
+                
+                let emotions = await dataRes.json();
+                emotions = safeParse(emotions); // 이중 문자열 대응
+
                 let stateRaw = await stateRes.json();
+                let state = safeParse(stateRaw); // 순수 글자 데이터 대응
+
                 const todayKST = new Date().toLocaleDateString('ko-KR');
                 const midnight = new Date(); midnight.setHours(0,0,0,0);
 
-                let state = (typeof stateRaw === 'object' && stateRaw.data) ? JSON.parse(stateRaw.data) : JSON.parse(stateRaw || "{}");
-
-                if (!state || !state.startDate) {
+                if (!state || typeof state !== 'object' || !state.startDate) {
                     state = { startDate: todayKST };
                     await fetch(`${GAS_URL}?sheet=학생용_바탕화면`, { method: 'POST', body: JSON.stringify({ data: JSON.stringify(state), range: "F1" }) });
                 }
 
-                const start = new Date(state.startDate), diffDays = Math.floor(Math.abs(midnight - start) / (1000 * 60 * 60 * 24));
-                const emotionIdx = diffDays % 80, selected = emotions[emotionIdx] || ["반가워", "힘내세요!"];
-                document.getElementById('emotion-word').textContent = selected[0];
-                document.getElementById('emotion-desc').textContent = selected[1];
-            } catch (e) {}
+                const start = new Date(state.startDate);
+                const diffDays = Math.floor(Math.abs(midnight - start) / (1000 * 60 * 60 * 24));
+                const emotionIdx = diffDays % 80;
+                
+                // 감정 데이터 선별 (단어/의미)
+                const selected = (emotions && emotions[emotionIdx]) ? emotions[emotionIdx] : ["반가워", "오늘 하루도 힘내세요!"];
+                
+                const wEl = document.getElementById('emotion-word');
+                const dEl = document.getElementById('emotion-desc');
+                
+                if(wEl) wEl.textContent = selected[0] || "반가워";
+                if(dEl) dEl.textContent = selected[1] || "오늘 하루도 힘내세요!";
+
+                // 폰트 크기 자동 조정
+                setTimeout(() => {
+                    if(wEl) { let ws = 60; wEl.style.fontSize = ws + 'px'; while (wEl.scrollWidth > 350 && ws > 25) { ws -= 2; wEl.style.fontSize = ws + 'px'; } }
+                    if(dEl) { let ds = 30; dEl.style.fontSize = ds + 'px'; while (dEl.scrollHeight > 85 && ds > 18) { ds -= 1; dEl.style.fontSize = ds + 'px'; } }
+                }, 50);
+            } catch (e) { console.error("Emotion Error:", e); }
         }
 
-        // 5. 칠판 및 기타 유틸
         window.onBlackboardInput = () => { clearTimeout(blackboardSaveTimeout); blackboardSaveTimeout = setTimeout(saveBlackboard, 1000); };
         async function saveBlackboard() {
-            const content = document.getElementById('blackboard-input').innerHTML;
-            if (content === "[object Object]") return;
+            const content = document.getElementById('blackboard-input').innerHTML; if (content === "[object Object]") return;
             try { await fetch(`${GAS_URL}?sheet=학생용_바탕화면`, { method: 'POST', body: JSON.stringify({ data: content, range: "E1" }) }); } catch (e) {}
         }
         window.loadBlackboard = async function() {
@@ -376,12 +403,11 @@
 
         function adjustScale() { document.getElementById('app-scaler').style.transform = `translate(-50%, -50%) scale(${Math.min(window.innerWidth / 1920, window.innerHeight / 1080)})`; }
 
-        // 6. 초기화
         window.onload = async () => {
             adjustScale(); window.addEventListener('resize', adjustScale);
-            refreshClock(); setInterval(refreshClock, 1000);
+            refreshClock(); setInterval(refreshClock, 1000); // 시계 즉시 작동
             
-            // 데이터 병렬 로드 (인증 로직 제거로 즉시 실행)
+            // 데이터 로드
             loadSchedulePreference();
             fetchWeather();
             fetchEmotionData();
@@ -389,7 +415,7 @@
             loadBlackboard();
         };
 
-        // 전역 UI 제어 함수
+        // 전역 UI 제어 함수들
         window.showBlackboardConfirm = () => document.getElementById('blackboard-confirm').style.display = 'flex';
         window.hideBlackboardConfirm = () => document.getElementById('blackboard-confirm').style.display = 'none';
         window.executeClear = () => { document.getElementById('blackboard-input').innerHTML = ""; saveBlackboard(); window.hideBlackboardConfirm(); };
